@@ -1,1 +1,46 @@
 <button onclick = "alert('알림 메시지가 표시됩니다.')">클릭!</button>button>
+
+<body>
+  <p>새로 고침해 보세요</p>
+
+  <script>
+    function random(number) {
+      return Math.floor(Math.random()*number);
+    }
+
+    function bgChange() {
+      const rndCol = 'rgb(' + random(255) + ',' + random(255) + ',' + random(255) + ')';
+      document.body.style.backgroundColor = rndCol;
+    }
+    bgChange();
+  </script>
+</body>
+
+<head>
+  <title>문서 안에 스크립트 작성</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script defer src="js/changeBg.js"></script>
+</head>
+
+<script>
+    function random(number) {
+      return Math.floor(Math.random()*number);
+    }
+
+    function bgChange() {
+      const rndCol = 'rgb(' + random(255) + ',' + random(255) + ',' + random(255) + ')';
+      document.body.style.backgroundColor = rndCol;
+    }
+    bgChange();
+  </script>
+<body>
+  <p>새로 고침해 보세요</p>
+
+  <script src="js/changBg.js"></script>
+</body>
+
+<script src="js/script.js">
+<script src="./js/script.js">
+background-image:url('../images/bg-1.jpg');
+  
+ 
