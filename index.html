@@ -70,3 +70,35 @@
   <div class="grid" id="stockGrid"></div>
 
   <script>
+    const stocks = [
+      { symbol: "AAPL", name: "Apple" },
+      { symbol: "MSFT", name: "Microsoft" },
+      { symbol: "NVDA", name: "NVIDIA" },
+      { symbol: "GOOGL", name: "Alphabet" },
+      { symbol: "AMZN", name: "Amazon" },
+      { symbol: "META", name: "Meta" },
+      { symbol: "TSLA", name: "Tesla" },
+      { symbol: "AVGO", name: "Broadcom" },
+      { symbol: "COST", name: "Costco" },
+      { symbol: "ASML", name: "ASML Holding" }
+    ];
+
+    const grid = document.getElementById("stockGrid");
+
+    stocks.forEach(stock => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const savedNote = localStorage.getItem(`note_${stock.symbol}`) || "";
+
+      card.innerHTML = `
+        <h2 class="stock-title">${stock.name} (${stock.symbol})</h2>
+        <div class="price">현재가: --</div>
+        <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
+        <button class="saveBtn">저장</button>
+        <div class="save-message" style="display:none;">✅ 저장 완료!</div>
+      `;
+
+      const title = card.querySelector(".stock-title");
+      const textarea = card.querySelector("textarea");
+      const saveBtn = card.query
