@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -24,7 +25,11 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       padding: 20px;
-      position: relative;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: scale(1.02);
     }
     .card h2 {
       font-size: 18px;
@@ -97,7 +102,9 @@
       const saveBtn = card.querySelector(".saveBtn");
       const message = card.querySelector(".save-message");
 
-      saveBtn.addEventListener("click", () => {
+      // 저장 기능
+      saveBtn.addEventListener("click", (e) => {
+        e.stopPropagation(); // 카드 클릭 방지
         localStorage.setItem(`note_${stock.symbol}`, textarea.value);
         message.style.display = "block";
         saveBtn.textContent = "저장됨";
@@ -106,6 +113,11 @@
           message.style.display = "none";
           saveBtn.textContent = "저장";
         }, 2000);
+      });
+
+      // 카드 클릭 시 상세 페이지로 이동
+      card.addEventListener("click", () => {
+        window.location.href = `detail.html?symbol=${stock.symbol}`;
       });
 
       grid.appendChild(card);
