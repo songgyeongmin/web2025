@@ -1,6 +1,5 @@
-<!-- index.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -25,15 +24,17 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       padding: 20px;
-      cursor: pointer;
       transition: transform 0.2s ease;
     }
     .card:hover {
       transform: scale(1.02);
     }
-    .card h2 {
+    .stock-title {
       font-size: 18px;
       margin-bottom: 10px;
+      color: blue;
+      text-decoration: underline;
+      cursor: pointer;
     }
     .price {
       font-weight: bold;
@@ -69,59 +70,3 @@
   <div class="grid" id="stockGrid"></div>
 
   <script>
-    const stocks = [
-      { symbol: "AAPL", name: "Apple" },
-      { symbol: "MSFT", name: "Microsoft" },
-      { symbol: "NVDA", name: "NVIDIA" },
-      { symbol: "GOOGL", name: "Alphabet" },
-      { symbol: "AMZN", name: "Amazon" },
-      { symbol: "META", name: "Meta" },
-      { symbol: "TSLA", name: "Tesla" },
-      { symbol: "AVGO", name: "Broadcom" },
-      { symbol: "COST", name: "Costco" },
-      { symbol: "ASML", name: "ASML Holding" }
-    ];
-
-    const grid = document.getElementById("stockGrid");
-
-    stocks.forEach(stock => {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const savedNote = localStorage.getItem(`note_${stock.symbol}`) || "";
-
-      card.innerHTML = `
-        <h2>${stock.name} (${stock.symbol})</h2>
-        <div class="price">현재가: --</div>
-        <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
-        <button class="saveBtn">저장</button>
-        <div class="save-message" style="display:none;">✅ 저장 완료!</div>
-      `;
-
-      const textarea = card.querySelector("textarea");
-      const saveBtn = card.querySelector(".saveBtn");
-      const message = card.querySelector(".save-message");
-
-      // 저장 기능
-      saveBtn.addEventListener("click", (e) => {
-        e.stopPropagation(); // 카드 클릭 방지
-        localStorage.setItem(`note_${stock.symbol}`, textarea.value);
-        message.style.display = "block";
-        saveBtn.textContent = "저장됨";
-
-        setTimeout(() => {
-          message.style.display = "none";
-          saveBtn.textContent = "저장";
-        }, 2000);
-      });
-
-      // 카드 클릭 시 상세 페이지로 이동
-      card.addEventListener("click", () => {
-        window.location.href = `detail.html?symbol=${stock.symbol}`;
-      });
-
-      grid.appendChild(card);
-    });
-  </script>
-</body>
-</html>
