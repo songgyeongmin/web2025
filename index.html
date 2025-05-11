@@ -24,6 +24,7 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       padding: 20px;
+      position: relative;
     }
     .card h2 {
       font-size: 18px;
@@ -40,6 +41,21 @@
       padding: 8px;
       font-size: 14px;
       resize: none;
+    }
+    button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .save-message {
+      margin-top: 5px;
+      font-size: 13px;
+      color: green;
     }
   </style>
 </head>
@@ -66,11 +82,32 @@
     stocks.forEach(stock => {
       const card = document.createElement("div");
       card.className = "card";
+
+      const savedNote = localStorage.getItem(`note_${stock.symbol}`) || "";
+
       card.innerHTML = `
         <h2>${stock.name} (${stock.symbol})</h2>
         <div class="price">현재가: --</div>
-        <textarea placeholder="메모를 남겨보세요..."></textarea>
+        <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
+        <button class="saveBtn">저장</button>
+        <div class="save-message" style="display:none;">✅ 저장 완료!</div>
       `;
+
+      const textarea = card.querySelector("textarea");
+      const saveBtn = card.querySelector(".saveBtn");
+      const message = card.querySelector(".save-message");
+
+      saveBtn.addEventListener("click", () => {
+        localStorage.setItem(`note_${stock.symbol}`, textarea.value);
+        message.style.display = "block";
+        saveBtn.textContent = "저장됨";
+
+        setTimeout(() => {
+          message.style.display = "none";
+          saveBtn.textContent = "저장";
+        }, 2000);
+      });
+
       grid.appendChild(card);
     });
   </script>
