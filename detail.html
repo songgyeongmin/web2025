@@ -1,81 +1,21 @@
+<!-- detail.html -->
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>종목 상세</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f9f9f9;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
-    .price {
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-    .back-link {
-      display: inline-block;
-      margin-top: 20px;
-      text-decoration: none;
-      color: #007bff;
-      font-weight: bold;
-    }
-  </style>
 </head>
 <body>
-  <div class="container">
-    <h1 id="stockName">종목 이름</h1>
-    <div class="price" id="stockPrice">현재가: 로딩 중...</div>
-    <a href="index.html" class="back-link">← 목록으로 돌아가기</a>
-  </div>
+  <h1 id="title">종목 상세 페이지</h1>
+  <p id="symbolInfo">로딩 중...</p>
 
   <script>
     const params = new URLSearchParams(window.location.search);
     const symbol = params.get("symbol");
 
-    const stockMap = {
-      AAPL: "Apple",
-      MSFT: "Microsoft",
-      NVDA: "NVIDIA",
-      GOOGL: "Alphabet",
-      AMZN: "Amazon",
-      META: "Meta",
-      TSLA: "Tesla",
-      AVGO: "Broadcom",
-      COST: "Costco",
-      ASML: "ASML Holding"
-    };
-
-    const stockNameEl = document.getElementById("stockName");
-    const stockPriceEl = document.getElementById("stockPrice");
-
-    if (symbol && stockMap[symbol]) {
-      stockNameEl.textContent = `${stockMap[symbol]} (${symbol})`;
-    } else {
-      stockNameEl.textContent = "잘못된 종목입니다";
-      stockPriceEl.style.display = "none";
-    }
-
-    // 🔄 예시: 주가를 API 없이 랜덤으로 표시 (API 연동은 나중에)
-    function fetchMockPrice() {
-      const fakePrice = (Math.random() * 1000 + 100).toFixed(2);
-      stockPriceEl.textContent = `현재가: $${fakePrice}`;
-    }
-
-    fetchMockPrice();
+    document.getElementById("title").innerText = `${symbol} 상세 페이지`;
+    document.getElementById("symbolInfo").innerText = `여기에 ${symbol} 관련 정보를 불러올 수 있어요.`;
   </script>
 </body>
 </html>
