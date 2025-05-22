@@ -1,121 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stock Detail</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f9f9f9;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .info {
-      max-width: 600px;
-      margin: 0 auto 40px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .info div {
-      margin-bottom: 10px;
-      font-size: 16px;
-    }
-    #chartContainer {
-      max-width: 700px;
-      margin: 0 auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-  </style>
-</head>
-<body>
-  <h1 id="stockTitle">상세 정보</h1>
-  <div class="info" id="stockInfo">
-    <div>현재가: <span id="currentPrice">로딩 중...</span></div>
-    <div>고가: <span id="highPrice">-</span></div>
-    <div>저가: <span id="lowPrice">-</span></div>
-    <div>전일 종가: <span id="prevClose">-</span></div>
-  </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <div id="chartContainer">
-    <canvas id="stockChart" height="100"></canvas>
-  </div>
+<script>
+  // API_KEY는 필요 없습니다 (테스트용)
+  // URLParams 관련 코드도 잠시 주석 처리합니다.
 
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  // 임시 더미 데이터
+  const testSymbol = "TEST_STOCK";
+  const testLabels = ['5/1', '5/2', '5/3', '5/4', '5/5', '5/6', '5/7'];
+  const testData = [150.23, 151.50, 149.80, 153.10, 152.00, 154.50, 153.80];
 
-  <script>
-    const API_KEY = "d0nkc2pr01qn5ghk9h20d0nkc2pr01qn5ghk9h2g";
+  document.getElementById("stockTitle").textContent = `${testSymbol} 상세 정보 (테스트)`;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    let symbol = urlParams.get('symbol');
+  // 기존 API 호출 부분을 주석 처리하거나 제거
+  // fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`) ...
 
-    // 콜론(:) 및 불필요한 부분 제거
-    if (symbol && symbol.includes(':')) {
-      symbol = symbol.split(':')[0];
-    }
-
-    if (!symbol) {
-      alert("종목이 없습니다.");
-      throw new Error("심볼 없음");
-    }
-
-    document.getElementById("stockTitle").textContent = `${symbol} 상세 정보`;
-
-    // 현재가 정보
-    fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`)
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("currentPrice").textContent = data.c ? `$${data.c.toFixed(2)}` : "-";
-        document.getElementById("highPrice").textContent = data.h ? `$${data.h.toFixed(2)}` : "-";
-        document.getElementById("lowPrice").textContent = data.l ? `$${data.l.toFixed(2)}` : "-";
-        document.getElementById("prevClose").textContent = data.pc ? `$${data.pc.toFixed(2)}` : "-";
-      })
-      .catch(err => console.error("가격 불러오기 오류", err));
-
-    // 캔들차트용 기간 (최근 1개월)
-    const now = Math.floor(Date.now() / 1000);
-    const oneMonthAgo = now - 60 * 60 * 24 * 30;
-
-    fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=D&from=${oneMonthAgo}&to=${now}&token=${API_KEY}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.s !== "ok") throw new Error("차트 데이터 오류");
-
-        const labels = data.t.map(ts => {
-          const d = new Date(ts * 1000);
-          return `${d.getMonth() + 1}/${d.getDate()}`;
-        });
-
-        const ctx = document.getElementById("stockChart").getContext("2d");
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: `${symbol} 종가`,
-              data: data.c,
-              borderColor: '#007bff',
-              backgroundColor: 'rgba(0, 123, 255, 0.1)',
-              fill: true,
-              tension: 0.3
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: { title: { display: true, text: '날짜' } },
-              y: { title: { display: true, text: '가격 ($)' } }
-            }
-          }
-        });
-      })
-      .catch
+  // 차트 생성 (더미 데이터 사용)
+  const ctx = document.getElementById("stockChart").getContext("2d");
+  if (ctx) { // 캔버스 컨텍스트가 존재하는지 확인
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: testLabels,
+        datasets: [{
+          label: `${testSymbol} 종가`,
+          data: testData,
+          borderColor: '#007bff',
+          backgroundColor: 'rgba(0, 123, 255, 0.1)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: { title: { display: true, text: '날짜' } },
+          y: { title: { display: true, text: '가격 ($)' } }
+        }
+      }
+    });
+  } else {
+    console.error("캔버스 요소(ID 'stockChart')를 찾을 수 없습니다.");
+  }
+</script>
