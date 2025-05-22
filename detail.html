@@ -3,61 +3,120 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Stock Detail</title>
+  <title>NASDAQ TOP 10</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background: #f9f9f9;
+      background: #f4f4f4;
     }
     h1 {
       text-align: center;
       margin-bottom: 30px;
     }
-    .info {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .card {
       background: white;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      transition: transform 0.3s ease;
     }
-    .info div {
-      margin-bottom: 12px;
-      font-size: 16px;
+    .card:hover {
+      transform: scale(1.05);
+    }
+    .card h2 a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .price {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    textarea {
+      width: 100%;
+      height: 60px;
+      padding: 8px;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .save-message {
+      font-size: 13px;
+      color: green;
     }
   </style>
 </head>
 <body>
-  <h1 id="stockTitle">상세 정보</h1>
-  <div class="info" id="stockInfo">
-    <div>현재가: <span id="currentPrice">로딩 중...</span></div>
-    <div>고가: <span id="highPrice">-</span></div>
-    <div>저가: <span id="lowPrice">-</span></div>
-    <div>전일 종가: <span id="prevClose">-</span></div>
-  </div>
+  <h1>NASDAQ TOP 10</h1>
+  <div class="grid" id="stockGrid"></div>
 
   <script>
-    const API_KEY = "d0nkc2pr01qn5ghk9h20d0nkc2pr01qn5ghk9h2g";
+    const API_KEY = "1a4a7a2f69ba42c0bc6edb908ee842aa";
+    const stocks = [
+      { symbol: "AAPL", name: "Apple" },
+      { symbol: "MSFT", name: "Microsoft" },
+      { symbol: "NVDA", name: "NVIDIA" },
+      { symbol: "GOOGL", name: "Alphabet" },
+      { symbol: "AMZN", name: "Amazon" },
+      { symbol: "META", name: "Meta" },
+      { symbol: "TSLA", name: "Tesla" },
+      { symbol: "AVGO", name: "Broadcom" },
+      { symbol: "COST", name: "Costco" },
+      { symbol: "ASML", name: "ASML Holding" }
+    ];
 
-    const urlParams = new URLSearchParams(window.location.search);
-    let symbol = urlParams.get('symbol');
+    const grid = document.getElementById("stockGrid");
 
-    if (symbol && symbol.includes(':')) {
-      symbol = symbol.split(':')[0]; // 잘못된 심볼 포맷 방지
-    }
+    stocks.forEach(stock => {
+      const card = document.createElement("div");
+      card.className = "card";
 
-    if (!symbol) {
-      alert("종목이 없습니다.");
-      throw new Error("심볼 없음");
-    }
+      const savedNote = localStorage.getItem(`note_${stock.symbol}`) || "";
 
-    document.getElementById("stockTitle").textContent = `${symbol} 상세 정보`;
+      card.innerHTML = `
+        <h2><a href="detail.html?symbol=${stock.symbol}">${stock.name} (${stock.symbol})</a></h2>
+        <div class="price" id="price_${stock.symbol}">현재가: 로딩 중...</div>
+        <textarea>${savedNote}</textarea>
+        <button>저장</button>
+        <div class="save-message" style="display:none;">✅ 저장 완료!</div>
+      `;
 
-    fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`)
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("currentPrice").textContent = data.c ? `$${data.c.toFixed(2)}` : "-";
-        document.getElementById("highPrice").textContent = data.h ? `$${data.h.toFixed(2)}` : "-";
-        document.getElementById("lowPrice").textContent = data.l ? `$${data.l.toFixed(2)}` : "-";
-        document.getElementById("prevClose").textContent =
+      const textarea = card.querySelector("textarea");
+      const button = card.querySelector("button");
+      const message = card.querySelector(".save-message");
+
+      button.addEventListener("click", () => {
+        localStorage.setItem(`note_${stock.symbol}`, textarea.value);
+        message.style.display = "block";
+        setTimeout(() => {
+          message.style.display = "none";
+        }, 1500);
+      });
+
+      // 가격 불러오기
+      fetch(`https://api.twelvedata.com/price?symbol=${stock.symbol}&apikey=${API_KEY}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${data.price}`;
+        })
+        .catch(err => {
+          document.getElementById(`price_${stock.symbol}`).textContent = `가격 오류`;
+        });
+
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>
