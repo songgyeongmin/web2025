@@ -1,122 +1,114 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NASDAQ TOP 10</title>
+  <title>상세 정보</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background: #f4f4f4;
+      background: #f9f9f9;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 20px;
-    }
-    .card {
+    .info {
+      max-width: 600px;
+      margin: auto;
       background: white;
+      padding: 20px;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      padding: 20px;
-      transition: transform 0.3s ease;
     }
-    .card:hover {
-      transform: scale(1.05);
-    }
-    .card h2 a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    .price {
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    textarea {
-      width: 100%;
-      height: 60px;
-      padding: 8px;
-      font-size: 14px;
-    }
-    button {
-      margin-top: 10px;
-      padding: 6px 12px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .save-message {
-      font-size: 13px;
-      color: green;
+    #chartContainer {
+      margin-top: 40px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
     }
   </style>
 </head>
 <body>
-  <h1>NASDAQ TOP 10</h1>
-  <div class="grid" id="stockGrid"></div>
+  <h1 id="stockTitle">상세 정보</h1>
+  <div class="info">
+    <div>현재가: <span id="currentPrice">로딩 중...</span></div>
+    <div>전일 종가: <span id="prevClose">-</span></div>
+  </div>
 
+  <div id="chartContainer">
+    <canvas id="stockChart" height="100"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const API_KEY = "1a4a7a2f69ba42c0bc6edb908ee842aa";
-    const stocks = [
-      { symbol: "AAPL", name: "Apple" },
-      { symbol: "MSFT", name: "Microsoft" },
-      { symbol: "NVDA", name: "NVIDIA" },
-      { symbol: "GOOGL", name: "Alphabet" },
-      { symbol: "AMZN", name: "Amazon" },
-      { symbol: "META", name: "Meta" },
-      { symbol: "TSLA", name: "Tesla" },
-      { symbol: "AVGO", name: "Broadcom" },
-      { symbol: "COST", name: "Costco" },
-      { symbol: "ASML", name: "ASML Holding" }
-    ];
+    const params = new URLSearchParams(window.location.search);
+    const symbol = params.get("symbol");
 
-    const grid = document.getElementById("stockGrid");
+    if (!symbol) {
+      alert("종목이 없습니다.");
+    } else {
+      document.getElementById("stockTitle").textContent = `${symbol} 상세 정보`;
 
-    stocks.forEach(stock => {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const savedNote = localStorage.getItem(`note_${stock.symbol}`) || "";
-
-      card.innerHTML = `
-        <h2><a href="detail.html?symbol=${stock.symbol}">${stock.name} (${stock.symbol})</a></h2>
-        <div class="price" id="price_${stock.symbol}">현재가: 로딩 중...</div>
-        <textarea>${savedNote}</textarea>
-        <button>저장</button>
-        <div class="save-message" style="display:none;">✅ 저장 완료!</div>
-      `;
-
-      const textarea = card.querySelector("textarea");
-      const button = card.querySelector("button");
-      const message = card.querySelector(".save-message");
-
-      button.addEventListener("click", () => {
-        localStorage.setItem(`note_${stock.symbol}`, textarea.value);
-        message.style.display = "block";
-        setTimeout(() => {
-          message.style.display = "none";
-        }, 1500);
-      });
-
-      // 가격 불러오기
-      fetch(`https://api.twelvedata.com/price?symbol=${stock.symbol}&apikey=${API_KEY}`)
+      // 현재 가격
+      fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${data.price}`;
+          if (data.code) {
+            throw new Error(data.message);
+          }
+          document.getElementById("currentPrice").textContent = `$${data.price}`;
+          document.getElementById("prevClose").textContent = `$${data.previous_close}`;
         })
         .catch(err => {
-          document.getElementById(`price_${stock.symbol}`).textContent = `가격 오류`;
+          console.error("가격 불러오기 오류:", err);
+          document.getElementById("currentPrice").textContent = "데이터 없음";
+          document.getElementById("prevClose").textContent = "데이터 없음";
         });
 
-      grid.appendChild(card);
-    });
+      // 차트 데이터 (60분 간격)
+      fetch(`https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${API_KEY}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.code) {
+            throw new Error(data.message);
+          }
+          const labels = data.values.map(val => val.datetime).reverse();
+          const prices = data.values.map(val => val.close).reverse();
+
+          const ctx = document.getElementById("stockChart").getContext("2d");
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: `${symbol} 종가`,
+                data: prices,
+                borderColor: "#007bff",
+                backgroundColor: "rgba(0,123,255,0.1)",
+                tension: 0.3,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                x: {
+                  ticks: { maxTicksLimit: 8 }
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: '가격 ($)'
+                  }
+                }
+              }
+            }
+          });
+        })
+        .catch(err => {
+          console.error("차트 불러오기 오류:", err);
+          document.getElementById("chartContainer").innerHTML = "<p style='color:red;'>차트를 불러올 수 없습니다.</p>";
+        });
+    }
   </script>
 </body>
 </html>
