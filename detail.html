@@ -1,138 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stock Detail</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f9f9f9;
-      color: #333;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-      color: #2c3e50;
-    }
-    .info {
-      max-width: 600px;
-      margin: 0 auto 40px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    .info div {
-      margin-bottom: 10px;
-      font-size: 17px;
-      display: flex;
-      justify-content: space-between;
-      padding: 5px 0;
-      border-bottom: 1px solid #eee;
-    }
-    .info div:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stock Detail</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
     }
-    .loading-message, .error-message {
-        text-align: center;
-        font-weight: bold;
-        padding: 20px;
-        color: #555;
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
     }
-    .error-message {
-        color: #e74c3c;
+    .info {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .back-button {
-        display: block;
-        width: fit-content;
-        margin: 20px auto;
-        padding: 10px 20px;
-        background-color: #007bff;
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-        font-size: 16px;
-        transition: background-color 0.3s ease;
+    .info div {
+      margin-bottom: 12px;
+      font-size: 16px;
     }
-    .back-button:hover {
-        background-color: #0056b3;
-    }
-  </style>
+  </style>
 </head>
 <body>
-  <h1 id="stockTitle">상세 정보</h1>
+  <h1 id="stockTitle">상세 정보</h1>
+  <div class="info" id="stockInfo">
+    <div>현재가: <span id="currentPrice">로딩 중...</span></div>
+    <div>고가: <span id="highPrice">-</span></div>
+    <div>저가: <span id="lowPrice">-</span></div>
+    <div>전일 종가: <span id="prevClose">-</span></div>
+  </div>
 
-  <div class="info" id="stockInfo">
-    <div><span>현재가:</span> <span id="currentPrice">로딩 중...</span></div>
-    <div><span>고가:</span> <span id="highPrice">로딩 중...</span></div>
-    <div><span>저가:</span> <span id="lowPrice">로딩 중...</span></div>
-    <div><span>전일 종가:</span> <span id="prevClose">로딩 중...</span></div>
-  </div>
+  <script>
+    const API_KEY = "d0nkc2pr01qn5ghk9h20d0nkc2pr01qn5ghk9h2g";
 
-    <a href="index.html" class="back-button">목록으로 돌아가기</a>
+    const urlParams = new URLSearchParams(window.location.search);
+    let symbol = urlParams.get('symbol');
 
-  <script>
-    // 여기에 본인의 Finnhub API 키를 입력하세요.
-    const API_KEY = "d0nkc2pr01qn5ghk9h20d0nkc2pr01qn5ghk9h2g"; // 실제 키로 변경하세요.
-
-    function initDetailPage() {
-        const urlParams = new URLSearchParams(window.location.search);
-        let symbol = urlParams.get('symbol');
-
-        // URL 심볼에서 불필요한 부분 제거 (예: NASDAQ:AAPL -> AAPL)
-        if (symbol && symbol.includes(':')) {
-            symbol = symbol.split(':')[0];
-        }
-
-        const stockTitleElement = document.getElementById("stockTitle");
-        const stockInfoElement = document.getElementById("stockInfo");
-        const currentPriceElement = document.getElementById("currentPrice");
-        const highPriceElement = document.getElementById("highPrice");
-        const lowPriceElement = document.getElementById("lowPrice");
-        const prevCloseElement = document.getElementById("prevClose");
-
-        if (!symbol) {
-            // 심볼이 없을 경우 오류 메시지 표시
-            stockTitleElement.textContent = "오류: 종목 정보를 찾을 수 없습니다.";
-            stockInfoElement.innerHTML = '<div class="error-message">선택된 종목이 없습니다. 목록에서 다시 선택해주세요.</div>';
-            console.error("Error: Stock symbol not found in URL.");
-            return; // 함수 내부에서 return은 유효합니다.
-        }
-
-        stockTitleElement.textContent = `${symbol} 상세 정보`;
-
-        // 가격 정보 가져오기
-        fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`)
-            .then(response => {
-                if (!response.ok) {
-                    // HTTP 상태 코드가 200이 아니면 오류 발생
-                    throw new Error(`HTTP error! Status: ${response.status} - ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                // 데이터가 유효한지 확인 (Finnhub는 때때로 빈 객체 {}를 반환할 수 있음)
-                if (data && Object.keys(data).length > 0 && data.c !== undefined && data.c !== 0) {
-                    currentPriceElement.textContent = data.c ? `$${data.c.toFixed(2)}` : "-";
-                    highPriceElement.textContent = data.h ? `$${data.h.toFixed(2)}` : "-";
-                    lowPriceElement.textContent = data.l ? `$${data.l.toFixed(2)}` : "-";
-                    prevCloseElement.textContent = data.pc ? `$${data.pc.toFixed(2)}` : "-";
-                } else {
-                    // 데이터가 없거나 유효하지 않을 경우
-                    stockInfoElement.innerHTML = '<div class="error-message">현재 가격 정보를 불러올 수 없습니다.<br>해당 종목의 데이터가 없거나 API 응답이 유효하지 않습니다.</div>';
-                }
-            })
-            .catch(err => {
-                console.error("가격 정보를 불러오는 중 오류 발생:", err);
-                stockInfoElement.innerHTML = `<div class="error-message">가격 정보를 불러오지 못했습니다.<br>${err.message}<br>API 키를 확인하거나 나중에 다시 시도해주세요.</div>`;
-            });
+    if (symbol && symbol.includes(':')) {
+      symbol = symbol.split(':')[0]; // 잘못된 심볼 포맷 방지
     }
 
-    // DOMContentLoaded 이벤트 발생 시 initDetailPage 함수 실행
-    document.addEventListener('DOMContentLoaded', initDetailPage);
-  </script>
-</body>
-</html>
+    if (!symbol) {
+      alert("종목이 없습니다.");
+      throw new Error("심볼 없음");
+    }
+
+    document.getElementById("stockTitle").textContent = `${symbol} 상세 정보`;
+
+    fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("currentPrice").textContent = data.c ? `$${data.c.toFixed(2)}` : "-";
+        document.getElementById("highPrice").textContent = data.h ? `$${data.h.toFixed(2)}` : "-";
+        document.getElementById("lowPrice").textContent = data.l ? `$${data.l.toFixed(2)}` : "-";
+        document.getElementById("prevClose").textContent =
