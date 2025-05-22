@@ -24,10 +24,23 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       padding: 20px;
+      position: relative;
       transition: transform 0.3s ease;
     }
     .card:hover {
       transform: scale(1.05);
+    }
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+    }
+    .card h2 img.logo {
+      width: 20px;
+      height: 20px;
+      margin-right: 8px;
+      border-radius: 4px;
     }
     .card h2 a {
       color: #007bff;
@@ -35,6 +48,7 @@
     }
     .price {
       font-weight: bold;
+      color: #333;
       margin-bottom: 10px;
     }
     textarea {
@@ -42,6 +56,7 @@
       height: 60px;
       padding: 8px;
       font-size: 14px;
+      resize: none;
     }
     button {
       margin-top: 10px;
@@ -51,8 +66,10 @@
       color: white;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 14px;
     }
     .save-message {
+      margin-top: 5px;
       font-size: 13px;
       color: green;
     }
@@ -64,17 +81,18 @@
 
   <script>
     const API_KEY = "1a4a7a2f69ba42c0bc6edb908ee842aa";
+
     const stocks = [
-      { symbol: "AAPL", name: "Apple" },
-      { symbol: "MSFT", name: "Microsoft" },
-      { symbol: "NVDA", name: "NVIDIA" },
-      { symbol: "GOOGL", name: "Alphabet" },
-      { symbol: "AMZN", name: "Amazon" },
-      { symbol: "META", name: "Meta" },
-      { symbol: "TSLA", name: "Tesla" },
-      { symbol: "AVGO", name: "Broadcom" },
-      { symbol: "COST", name: "Costco" },
-      { symbol: "ASML", name: "ASML Holding" }
+      { symbol: "AAPL", name: "Apple", logo: "https://logo.clearbit.com/apple.com" },
+      { symbol: "MSFT", name: "Microsoft", logo: "https://logo.clearbit.com/microsoft.com" },
+      { symbol: "NVDA", name: "NVIDIA", logo: "https://logo.clearbit.com/nvidia.com" },
+      { symbol: "GOOGL", name: "Alphabet", logo: "https://logo.clearbit.com/abc.xyz" },
+      { symbol: "AMZN", name: "Amazon", logo: "https://logo.clearbit.com/amazon.com" },
+      { symbol: "META", name: "Meta", logo: "https://logo.clearbit.com/meta.com" },
+      { symbol: "TSLA", name: "Tesla", logo: "https://logo.clearbit.com/tesla.com" },
+      { symbol: "AVGO", name: "Broadcom", logo: "https://logo.clearbit.com/broadcom.com" },
+      { symbol: "COST", name: "Costco", logo: "https://logo.clearbit.com/costco.com" },
+      { symbol: "ASML", name: "ASML Holding", logo: "https://logo.clearbit.com/asml.com" }
     ];
 
     const grid = document.getElementById("stockGrid");
@@ -86,33 +104,39 @@
       const savedNote = localStorage.getItem(`note_${stock.symbol}`) || "";
 
       card.innerHTML = `
-        <h2><a href="detail.html?symbol=${stock.symbol}">${stock.name} (${stock.symbol})</a></h2>
+        <h2>
+          <img src="${stock.logo}" alt="${stock.name} 로고" class="logo" />
+          <a href="detail.html?symbol=${stock.symbol}">${stock.name} (${stock.symbol})</a>
+        </h2>
         <div class="price" id="price_${stock.symbol}">현재가: 로딩 중...</div>
-        <textarea>${savedNote}</textarea>
-        <button>저장</button>
+        <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
+        <button class="saveBtn">저장</button>
         <div class="save-message" style="display:none;">✅ 저장 완료!</div>
       `;
 
       const textarea = card.querySelector("textarea");
-      const button = card.querySelector("button");
+      const saveBtn = card.querySelector(".saveBtn");
       const message = card.querySelector(".save-message");
 
-      button.addEventListener("click", () => {
+      saveBtn.addEventListener("click", () => {
         localStorage.setItem(`note_${stock.symbol}`, textarea.value);
         message.style.display = "block";
+        saveBtn.textContent = "저장됨";
         setTimeout(() => {
           message.style.display = "none";
-        }, 1500);
+          saveBtn.textContent = "저장";
+        }, 2000);
       });
 
-      // 가격 불러오기
-      fetch(`https://api.twelvedata.com/price?symbol=${stock.symbol}&apikey=${API_KEY}`)
+      fetch(`https://finnhub.io/api/v1/quote?symbol=${stock.symbol}&token=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${data.price}`;
+          const price = data.c;
+          document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${price}`;
         })
         .catch(err => {
-          document.getElementById(`price_${stock.symbol}`).textContent = `가격 오류`;
+          console.error("가격 오류", stock.symbol, err);
+          document.getElementById(`price_${stock.symbol}`).textContent = "현재가: 오류 발생";
         });
 
       grid.appendChild(card);
