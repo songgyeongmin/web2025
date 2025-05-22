@@ -34,6 +34,10 @@
       font-size: 18px;
       margin-bottom: 10px;
     }
+    .card h2 a {
+      color: #007bff;
+      text-decoration: none;
+    }
     .price {
       font-weight: bold;
       color: #333;
@@ -68,6 +72,8 @@
   <div class="grid" id="stockGrid"></div>
 
   <script>
+    const API_KEY = "d0nkc2pr01qn5ghk9h20d0nkc2pr01qn5ghk9h2g"; // ✅ 제공하신 무료 키
+
     const stocks = [
       { symbol: "AAPL", name: "Apple" },
       { symbol: "MSFT", name: "Microsoft" },
@@ -91,7 +97,7 @@
 
       card.innerHTML = `
         <h2><a href="detail.html?symbol=${stock.symbol}">${stock.name} (${stock.symbol})</a></h2>
-        <div class="price">현재가: --</div>
+        <div class="price" id="price_${stock.symbol}">현재가: 로딩 중...</div>
         <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
         <button class="saveBtn">저장</button>
         <div class="save-message" style="display:none;">✅ 저장 완료!</div>
@@ -101,16 +107,28 @@
       const saveBtn = card.querySelector(".saveBtn");
       const message = card.querySelector(".save-message");
 
+      // 저장 기능
       saveBtn.addEventListener("click", () => {
         localStorage.setItem(`note_${stock.symbol}`, textarea.value);
         message.style.display = "block";
         saveBtn.textContent = "저장됨";
-
         setTimeout(() => {
           message.style.display = "none";
           saveBtn.textContent = "저장";
         }, 2000);
       });
+
+      // 실시간 가격 연동
+      fetch(`https://finnhub.io/api/v1/quote?symbol=${stock.symbol}&token=${API_KEY}`)
+        .then(res => res.json())
+        .then(data => {
+          const price = data.c;
+          document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${price}`;
+        })
+        .catch(err => {
+          console.error("가격 오류", stock.symbol, err);
+          document.getElementById(`price_${stock.symbol}`).textContent = "현재가: 오류 발생";
+        });
 
       grid.appendChild(card);
     });
