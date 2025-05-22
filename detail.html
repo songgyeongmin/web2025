@@ -1,44 +1,245 @@
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Detail</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+    .info {
+      max-width: 600px;
+      margin: 0 auto 40px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .info div {
+      margin-bottom: 10px;
+      font-size: 17px;
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .info div:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    #chartContainer {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      min-height: 250px; /* 차트 로딩 전 공간 확보 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .loading-spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-left-color: #007bff;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-left: -15px;
+        margin-top: -15px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .error-message {
+        color: #e74c3c;
+        text-align: center;
+        font-weight: bold;
+    }
+    .back-button {
+        display: block;
+        width: fit-content;
+        margin: 20px auto;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+    }
+    .back-button:hover {
+        background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="stockTitle">상세 정보</h1>
 
-<script>
-  // API_KEY는 필요 없습니다 (테스트용)
-  // URLParams 관련 코드도 잠시 주석 처리합니다.
+  <div class="info" id="stockInfo">
+    <div><span>현재가:</span> <span id="currentPrice">로딩 중...</span></div>
+    <div><span>고가:</span> <span id="highPrice">-</span></div>
+    <div><span>저가:</span> <span id="lowPrice">-</span></div>
+    <div><span>전일 종가:</span> <span id="prevClose">-</span></div>
+  </div>
 
-  // 임시 더미 데이터
-  const testSymbol = "TEST_STOCK";
-  const testLabels = ['5/1', '5/2', '5/3', '5/4', '5/5', '5/6', '5/7'];
-  const testData = [150.23, 151.50, 149.80, 153.10, 152.00, 154.50, 153.80];
+  <div id="chartContainer">
+    <div class="loading-spinner"></div>
+    <canvas id="stockChart" height="100"></canvas>
+  </div>
 
-  document.getElementById("stockTitle").textContent = `${testSymbol} 상세 정보 (테스트)`;
+    <a href="index.html" class="back-button">목록으로 돌아가기</a>
 
-  // 기존 API 호출 부분을 주석 처리하거나 제거
-  // fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`) ...
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  // 차트 생성 (더미 데이터 사용)
-  const ctx = document.getElementById("stockChart").getContext("2d");
-  if (ctx) { // 캔버스 컨텍스트가 존재하는지 확인
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: testLabels,
-        datasets: [{
-          label: `${testSymbol} 종가`,
-          data: testData,
-          borderColor: '#007bff',
-          backgroundColor: 'rgba(0, 123, 255, 0.1)',
-          fill: true,
-          tension: 0.3
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: { title: { display: true, text: '날짜' } },
-          y: { title: { display: true, text: '가격 ($)' } }
-        }
-      }
-    });
-  } else {
-    console.error("캔버스 요소(ID 'stockChart')를 찾을 수 없습니다.");
-  }
-</script>
+  <script>
+    // 여기에 본인의 Finnhub API 키를 입력하세요.
+    const API_KEY = "d0nkc2pr01qn5ghk9h20d0nkc2pr01qn5ghk9h2g"; // 실제 키로 변경하세요.
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let symbol = urlParams.get('symbol');
+
+    // URL 심볼에서 불필요한 부분 제거 (예: NASDAQ:AAPL -> AAPL)
+    if (symbol && symbol.includes(':')) {
+      symbol = symbol.split(':')[0];
+    }
+
+    if (!symbol) {
+      // 심볼이 없을 경우 오류 메시지 표시
+      document.getElementById("stockTitle").textContent = "오류: 종목 정보를 찾을 수 없습니다.";
+      document.getElementById("stockInfo").innerHTML = '<div class="error-message">선택된 종목이 없습니다. 목록에서 다시 선택해주세요.</div>';
+      document.getElementById("chartContainer").innerHTML = '<div class="error-message">차트를 표시할 수 없습니다.</div>';
+      console.error("Error: Stock symbol not found in URL.");
+      return; // 더 이상 스크립트 실행 중지
+    }
+
+    document.getElementById("stockTitle").textContent = `${symbol} 상세 정보`;
+
+    // 현재가 정보 가져오기
+    fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        // 데이터가 유효한지 확인 (Finnhub는 때때로 빈 객체 { }를 반환할 수 있음)
+        if (data && Object.keys(data).length > 0 && data.c !== 0) {
+          document.getElementById("currentPrice").textContent = data.c ? `$${data.c.toFixed(2)}` : "-";
+          document.getElementById("highPrice").textContent = data.h ? `$${data.h.toFixed(2)}` : "-";
+          document.getElementById("lowPrice").textContent = data.l ? `$${data.l.toFixed(2)}` : "-";
+          document.getElementById("prevClose").textContent = data.pc ? `$${data.pc.toFixed(2)}` : "-";
+        } else {
+            // 데이터가 없거나 0일 경우
+            document.getElementById("stockInfo").innerHTML = '<div class="error-message">현재 가격 정보를 불러올 수 없습니다.</div>';
+        }
+      })
+      .catch(err => {
+        console.error("가격 정보를 불러오는 중 오류 발생:", err);
+        document.getElementById("stockInfo").innerHTML = '<div class="error-message">가격 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>';
+      });
+
+
+    // 차트 데이터 가져오기 (최근 1개월)
+    const chartContainer = document.getElementById("chartContainer");
+    const loadingSpinner = chartContainer.querySelector(".loading-spinner");
+    const stockChartCanvas = document.getElementById("stockChart");
+
+    // 로딩 스피너 표시
+    loadingSpinner.style.display = 'block';
+    stockChartCanvas.style.display = 'none'; // 차트 캔버스 숨김
+
+    const now = Math.floor(Date.now() / 1000);
+    // 30일 전 대신 90일 전 데이터로 변경하여 좀 더 긴 기간의 추세 확인 (API 제한 고려하여 조정 가능)
+    const threeMonthsAgo = now - 60 * 60 * 24 * 90;
+
+    fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=D&from=${threeMonthsAgo}&to=${now}&token=${API_KEY}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        loadingSpinner.style.display = 'none'; // 로딩 스피너 숨김
+        stockChartCanvas.style.display = 'block'; // 차트 캔버스 표시
+
+        if (data.s !== "ok" || !data.c || data.c.length === 0) {
+          throw new Error("차트 데이터를 찾을 수 없습니다.");
+        }
+
+        const labels = data.t.map(ts => {
+          const d = new Date(ts * 1000);
+          return `${d.getMonth() + 1}/${d.getDate()}`; // 월/일 형식
+        });
+
+        const ctx = stockChartCanvas.getContext("2d");
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: `${symbol} 종가`,
+              data: data.c,
+              borderColor: '#007bff',
+              backgroundColor: 'rgba(0, 123, 255, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 2 // 데이터 포인트 크기 줄이기
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false, // 캔버스 크기 제어 허용
+            plugins: {
+              legend: {
+                display: true // 범례 표시
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: '날짜',
+                  color: '#555'
+                },
+                grid: {
+                    display: false // x축 격자선 숨기기
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: '가격 ($)',
+                  color: '#555'
+                }
+              }
+            }
+          }
+        });
+      })
+      .catch(err => {
+        loadingSpinner.style.display = 'none'; // 로딩 스피너 숨김
+        stockChartCanvas.style.display = 'none'; // 차트 캔버스 숨김
+        console.error("차트를 불러오는 중 오류 발생:", err);
+        chartContainer.innerHTML = `<div class="error-message">차트를 불러오지 못했습니다.<br> ${err.message}<br>API 키를 확인하거나 나중에 다시 시도해주세요.</div>`;
+      });
+  </script>
+</body>
+</html>
