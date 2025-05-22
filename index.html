@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>NASDAQ TOP 10</title>
   <style>
     body {
@@ -72,7 +72,7 @@
   <div class="grid" id="stockGrid"></div>
 
   <script>
-    const API_KEY = "d0nkc2pr01qn5ghk9h20d0nkc2pr01qn5ghk9h2g"; // ✅ 제공하신 무료 키
+    const API_KEY = "d0nkc2pr01qn5ghk9h20d0nkc2pr01qn5ghk9h2g";
 
     const stocks = [
       { symbol: "AAPL", name: "Apple" },
@@ -96,7 +96,7 @@
       const savedNote = localStorage.getItem(`note_${stock.symbol}`) || "";
 
       card.innerHTML = `
-        <h2><a href="detail.html?symbol=${stock.symbol}">${stock.name} (${stock.symbol})</a></h2>
+        <h2><a href="detail.html?symbol=${encodeURIComponent(stock.symbol)}">${stock.name} (${stock.symbol})</a></h2>
         <div class="price" id="price_${stock.symbol}">현재가: 로딩 중...</div>
         <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
         <button class="saveBtn">저장</button>
@@ -107,7 +107,6 @@
       const saveBtn = card.querySelector(".saveBtn");
       const message = card.querySelector(".save-message");
 
-      // 저장 기능
       saveBtn.addEventListener("click", () => {
         localStorage.setItem(`note_${stock.symbol}`, textarea.value);
         message.style.display = "block";
@@ -118,15 +117,17 @@
         }, 2000);
       });
 
-      // 실시간 가격 연동
+      // 가격 불러오기
       fetch(`https://finnhub.io/api/v1/quote?symbol=${stock.symbol}&token=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          const price = data.c;
-          document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${price}`;
+          if (data.c) {
+            document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${data.c.toFixed(2)}`;
+          } else {
+            document.getElementById(`price_${stock.symbol}`).textContent = "현재가: 데이터 없음";
+          }
         })
-        .catch(err => {
-          console.error("가격 오류", stock.symbol, err);
+        .catch(() => {
           document.getElementById(`price_${stock.symbol}`).textContent = "현재가: 오류 발생";
         });
 
