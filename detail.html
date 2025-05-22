@@ -3,99 +3,139 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Stock Details</title>
+  <title>Stock Detail</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background: #f4f4f4;
+      background: #f9f9f9;
     }
     h1 {
       text-align: center;
       margin-bottom: 30px;
     }
-    .card {
+    .info {
+      max-width: 600px;
+      margin: 0 auto 40px auto;
+      padding: 20px;
       background: white;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      padding: 20px;
-      max-width: 800px;
-      margin: 0 auto;
     }
-    .price {
-      font-weight: bold;
-      color: #333;
+    .info div {
       margin-bottom: 10px;
+      font-size: 16px;
     }
-    textarea {
-      width: 100%;
-      height: 100px;
-      padding: 8px;
-      font-size: 14px;
-      resize: none;
-    }
-    button {
-      margin-top: 10px;
-      padding: 6px 12px;
-      background-color: #007bff;
-      border: none;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
+    #chartContainer {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
-  <h1>Stock Detail</h1>
-  <div id="stockDetails" class="card"></div>
+  <h1 id="stockTitle">상세 정보</h1>
+  <div class="info" id="stockInfo">
+    <div>현재가: <span id="currentPrice">로딩 중...</span></div>
+    <div>고가: <span id="highPrice">-</span></div>
+    <div>저가: <span id="lowPrice">-</span></div>
+    <div>전일 종가: <span id="prevClose">-</span></div>
+  </div>
+
+  <div id="chartContainer">
+    <canvas id="stockChart" height="100"></canvas>
+  </div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
+    const API_KEY = "d0nkc2pr01qn5ghk9h20d0nkc2pr01qn5ghk9h2g";
+
+    // URL에서 symbol 추출
     const urlParams = new URLSearchParams(window.location.search);
     const symbol = urlParams.get('symbol');
 
-    const stockDetails = document.getElementById("stockDetails");
+    if (!symbol) {
+      alert("종목이 없습니다.");
+    } else {
+      document.getElementById("stockTitle").textContent = `${symbol} 상세 정보`;
 
-    // 예시로 가격을 하드코딩하고 나중에 API를 통해 실시간 가격을 가져올 수 있습니다.
-    const stocks = {
-      "AAPL": { name: "Apple", price: "$150" },
-      "MSFT": { name: "Microsoft", price: "$280" },
-      "NVDA": { name: "NVIDIA", price: "$800" },
-      "GOOGL": { name: "Alphabet", price: "$2700" },
-      "AMZN": { name: "Amazon", price: "$3300" },
-      "META": { name: "Meta", price: "$400" },
-      "TSLA": { name: "Tesla", price: "$600" },
-      "AVGO": { name: "Broadcom", price: "$600" },
-      "COST": { name: "Costco", price: "$500" },
-      "ASML": { name: "ASML Holding", price: "$700" }
-    };
+      // 현재가 정보 가져오기
+      fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API_KEY}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("currentPrice").textContent = `$${data.c}`;
+          document.getElementById("highPrice").textContent = `$${data.h}`;
+          document.getElementById("lowPrice").textContent = `$${data.l}`;
+          document.getElementById("prevClose").textContent = `$${data.pc}`;
+        })
+        .catch(err => console.error("가격 불러오기 오류", err));
 
-    const stock = stocks[symbol] || { name: "Unknown", price: "N/A" };
+      // 차트 데이터 (캔들)
+      const now = Math.floor(Date.now() / 1000);
+      const oneWeekAgo = now - 60 * 60 * 24 * 7;
 
-    const savedNote = localStorage.getItem(`note_${symbol}`) || "";
+      fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=D&from=${oneWeekAgo}&to=${now}&token=${API_KEY}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.s !== "ok") throw new Error("차트 데이터 오류");
 
-    stockDetails.innerHTML = `
-      <h2>${stock.name} (${symbol})</h2>
-      <div class="price">현재가: ${stock.price}</div>
-      <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
-      <button class="saveBtn">저장</button>
-      <div class="save-message" style="display:none;">✅ 저장 완료!</div>
-    `;
+          const labels = data.t.map(t => {
+            const date = new Date(t * 1000);
+            return `${date.getMonth()+1}/${date.getDate()}`;
+          });
 
-    const textarea = stockDetails.querySelector("textarea");
-    const saveBtn = stockDetails.querySelector(".saveBtn");
-    const message = stockDetails.querySelector(".save-message");
+          const chartData = {
+            labels: labels,
+            datasets: [{
+              label: `${symbol} 종가`,
+              data: data.c,
+              borderColor: '#007bff',
+              backgroundColor: 'rgba(0, 123, 255, 0.1)',
+              fill: true,
+              tension: 0.3
+            }]
+          };
 
-    saveBtn.addEventListener("click", () => {
-      localStorage.setItem(`note_${symbol}`, textarea.value);
-      message.style.display = "block";
-      saveBtn.textContent = "저장됨";
-
-      setTimeout(() => {
-        message.style.display = "none";
-        saveBtn.textContent = "저장";
-      }, 2000);
-    });
+          const ctx = document.getElementById("stockChart").getContext("2d");
+          new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  display: true
+                }
+              },
+              scales: {
+                x: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: '날짜'
+                  }
+                },
+                y: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: '가격 ($)'
+                  }
+                }
+              }
+            }
+          });
+        })
+        .catch(err => {
+          console.error("차트 오류", err);
+          document.getElementById("chartContainer").innerHTML = "<p style='color:red;'>차트 불러오기에 실패했습니다.</p>";
+        });
+    }
   </script>
 </body>
 </html>
