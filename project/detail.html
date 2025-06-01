@@ -10,35 +10,49 @@
       padding: 20px;
       background: #f9f9f9;
     }
-    .info, #description, #news {
-      max-width: 700px;
-      margin: 30px auto;
+    .info {
+      max-width: 600px;
+      margin: auto;
       background: white;
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    #wikiDescriptionContainer {
+      max-width: 700px;
+      margin: auto;
+      background: #fff8dc;
+      border: 2px solid #f0c040;
+      border-radius: 12px;
+      padding: 20px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #333;
+      min-height: 150px;
+      margin-bottom: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    #wikiDescription {
+      white-space: pre-wrap;
+      flex: 1;
+      margin-right: 15px;
+    }
+    #wikiButton {
+      padding: 8px 14px;
+      background-color: #007bff;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      white-space: nowrap;
     }
     #chartContainer {
-      margin-top: 40px;
       max-width: 700px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    h1, h3 {
-      text-align: center;
-    }
-    ul {
-      padding-left: 20px;
-    }
-    li {
-      margin-bottom: 10px;
-    }
-    a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
+      margin: auto;
     }
   </style>
 </head>
@@ -49,24 +63,18 @@
     <div>전일 종가: <span id="prevClose">-</span></div>
   </div>
 
+  <div id="wikiDescriptionContainer">
+    <div id="wikiDescription">위키 설명 로딩 중...</div>
+    <button id="wikiButton" style="display:none;">위키피디아 바로가기</button>
+  </div>
+
   <div id="chartContainer">
     <canvas id="stockChart" height="100"></canvas>
   </div>
 
-  <div id="description">
-    <h3>회사 설명</h3>
-    <p id="wikiSummary">불러오는 중...</p>
-  </div>
-
-  <div id="news">
-    <h3>관련 뉴스 (Yahoo Finance)</h3>
-    <ul id="newsList">로딩 중...</ul>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const TWELVE_API_KEY = "1a4a7a2f69ba42c0bc6edb908ee842aa";
-
+    const API_KEY = "1a4a7a2f69ba42c0bc6edb908ee842aa";
     const params = new URLSearchParams(window.location.search);
     const symbol = params.get("symbol");
 
@@ -75,24 +83,29 @@
     } else {
       document.getElementById("stockTitle").textContent = `${symbol} 상세 정보`;
 
-      // 📈 현재 가격 및 전일 종가
-      fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${TWELVE_API_KEY}`)
+      // 가격 정보 가져오기
+      fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          if (data.code) throw new Error(data.message);
+          if (data.code) {
+            throw new Error(data.message);
+          }
           document.getElementById("currentPrice").textContent = `$${data.price}`;
           document.getElementById("prevClose").textContent = `$${data.previous_close}`;
         })
-        .catch(() => {
+        .catch(err => {
+          console.error("가격 불러오기 오류:", err);
           document.getElementById("currentPrice").textContent = "데이터 없음";
           document.getElementById("prevClose").textContent = "데이터 없음";
         });
 
-      // 📊 주가 차트
-      fetch(`https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${TWELVE_API_KEY}`)
+      // 차트 데이터 (1시간 간격, 24시간치)
+      fetch(`https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          if (data.code) throw new Error(data.message);
+          if (data.code) {
+            throw new Error(data.message);
+          }
           const labels = data.values.map(val => val.datetime).reverse();
           const prices = data.values.map(val => val.close).reverse();
 
@@ -113,69 +126,88 @@
             options: {
               responsive: true,
               scales: {
-                x: { ticks: { maxTicksLimit: 8 }},
-                y: { title: { display: true, text: '가격 ($)' }}
+                x: {
+                  ticks: { maxTicksLimit: 8 }
+                },
+                y: {
+                  title: {
+                    display: true,
+                    text: '가격 ($)'
+                  }
+                }
               }
             }
           });
         })
-        .catch(() => {
+        .catch(err => {
+          console.error("차트 불러오기 오류:", err);
           document.getElementById("chartContainer").innerHTML = "<p style='color:red;'>차트를 불러올 수 없습니다.</p>";
         });
 
-      // 📝 위키백과 설명
+      // 나무위키 문서명 매핑 (기존)
       const wikiMap = {
-        "AAPL": "애플", "MSFT": "마이크로소프트", "NVDA": "엔비디아", "GOOGL": "알파벳 (기업)",
-        "AMZN": "아마존닷컴", "META": "메타 플랫폼스", "TSLA": "테슬라", "AVGO": "브로드컴",
-        "COST": "코스트코", "ASML": "ASML"
+        "AAPL": "애플",
+        "MSFT": "마이크로소프트",
+        "NVDA": "엔비디아",
+        "GOOGL": "구글",
+        "AMZN": "아마존",
+        "META": "메타_플랫폼스",
+        "TSLA": "테슬라",
+        "AVGO": "브로드컴",
+        "COST": "코스트코",
+        "ASML": "ASML"
       };
-      const wikiTitle = wikiMap[symbol];
 
-      if (wikiTitle) {
-        fetch(`https://ko.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`)
-          .then(res => res.json())
-          .then(data => {
-            document.getElementById("wikiSummary").textContent = data.extract || "설명을 찾을 수 없습니다.";
-          })
-          .catch(() => {
-            document.getElementById("wikiSummary").textContent = "설명 로딩 실패";
-          });
+      // 한국어 위키피디아 페이지명 매핑 (바로가기용)
+      const wikiPediaMap = {
+        "AAPL": "애플",
+        "MSFT": "마이크로소프트",
+        "NVDA": "엔비디아",
+        "GOOGL": "구글",
+        "AMZN": "아마존",
+        "META": "메타 플랫폼스",
+        "TSLA": "테슬라",
+        "AVGO": "브로드컴",
+        "COST": "코스트코",
+        "ASML": "ASML"
+      };
+
+      const wikiTitle = wikiMap[symbol] || null;
+      const wikiPediaTitle = wikiPediaMap[symbol] || null;
+
+      if (!wikiTitle) {
+        document.getElementById("wikiDescription").textContent = "위키 설명을 찾을 수 없습니다.";
       } else {
-        document.getElementById("wikiSummary").textContent = "이 종목에 대한 설명은 준비되지 않았습니다.";
-      }
+        // 나무위키 CORS 우회 fetch
+        const url = encodeURIComponent(`https://namu.wiki/w/${wikiTitle}`);
 
-      // 📰 Yahoo Finance 뉴스 (웹 스크래핑)
-      fetch(`https://finance.yahoo.com/quote/${symbol}/news`)
-        .then(response => response.text())
-        .then(html => {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, 'text/html');
-          const articles = doc.querySelectorAll('li.js-stream-content');
+        fetch(`https://api.allorigins.win/get?url=${url}`)
+          .then(res => {
+            if (!res.ok) throw new Error("프록시 서버 오류");
+            return res.json();
+          })
+          .then(data => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data.contents, "text/html");
+            const contentDiv = doc.querySelector("#wiki-content");
+            if (!contentDiv) throw new Error("본문 추출 실패");
+            const textContent = contentDiv.textContent.trim().slice(0, 500) + " ...";
+            document.getElementById("wikiDescription").textContent = textContent;
 
-          const newsList = document.getElementById("newsList");
-          newsList.innerHTML = "";
-
-          let count = 0;
-          articles.forEach(article => {
-            if (count >= 5) return;
-            const link = article.querySelector('a.js-content-viewer');
-            const title = article.querySelector('h3');
-
-            if (link && title) {
-              const li = document.createElement("li");
-              li.innerHTML = `<a href="https://finance.yahoo.com${link.getAttribute('href')}" target="_blank">${title.textContent}</a>`;
-              newsList.appendChild(li);
-              count++;
+            // 버튼 보이기 & 링크 연결
+            if (wikiPediaTitle) {
+              const btn = document.getElementById("wikiButton");
+              btn.style.display = "inline-block";
+              btn.onclick = () => {
+                window.open(`https://ko.wikipedia.org/wiki/${encodeURIComponent(wikiPediaTitle)}`, "_blank");
+              };
             }
+          })
+          .catch(err => {
+            console.error("위키 설명 로딩 실패:", err);
+            document.getElementById("wikiDescription").textContent = "위키 설명을 불러올 수 없습니다.";
           });
-
-          if (count === 0) {
-            newsList.innerHTML = "<li>관련 뉴스가 없습니다.</li>";
-          }
-        })
-        .catch(() => {
-          document.getElementById("newsList").innerHTML = "<li>뉴스 로딩 실패</li>";
-        });
+      }
     }
   </script>
 </body>
