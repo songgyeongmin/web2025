@@ -24,6 +24,32 @@
       margin-left: auto;
       margin-right: auto;
     }
+    .news {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .news h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .news ul {
+      padding-left: 20px;
+    }
+    .news li {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .news li a {
+      text-decoration: none;
+      color: #333;
+    }
+    .news li a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -35,6 +61,13 @@
 
   <div id="chartContainer">
     <canvas id="stockChart" height="100"></canvas>
+  </div>
+
+  <div class="news" id="newsSection">
+    <h2>📢 최근 뉴스</h2>
+    <ul id="newsList">
+      <li>뉴스 불러오는 중...</li>
+    </ul>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -52,9 +85,7 @@
       fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          if (data.code) {
-            throw new Error(data.message);
-          }
+          if (data.code) throw new Error(data.message);
           document.getElementById("currentPrice").textContent = `$${data.price}`;
           document.getElementById("prevClose").textContent = `$${data.previous_close}`;
         })
@@ -68,9 +99,7 @@
       fetch(`https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          if (data.code) {
-            throw new Error(data.message);
-          }
+          if (data.code) throw new Error(data.message);
           const labels = data.values.map(val => val.datetime).reverse();
           const prices = data.values.map(val => val.close).reverse();
 
@@ -91,9 +120,7 @@
             options: {
               responsive: true,
               scales: {
-                x: {
-                  ticks: { maxTicksLimit: 8 }
-                },
+                x: { ticks: { maxTicksLimit: 8 } },
                 y: {
                   title: {
                     display: true,
@@ -107,6 +134,25 @@
         .catch(err => {
           console.error("차트 불러오기 오류:", err);
           document.getElementById("chartContainer").innerHTML = "<p style='color:red;'>차트를 불러올 수 없습니다.</p>";
+        });
+
+      // 뉴스 불러오기
+      const newsList = document.getElementById("newsList");
+      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://feeds.finance.yahoo.com/rss/2.0/headline?s=${symbol}&region=US&lang=en-US`)}`)
+        .then(res => res.json())
+        .then(data => {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(data.contents, "application/xml");
+          const items = Array.from(xml.querySelectorAll("item")).slice(0, 3);
+          newsList.innerHTML = items.map(item => `
+            <li><a href="${item.querySelector("link").textContent}" target="_blank">
+              ${item.querySelector("title").textContent}
+            </a></li>
+          `).join("");
+        })
+        .catch(err => {
+          console.error("뉴스 오류", err);
+          newsList.innerHTML = "<li>뉴스를 불러올 수 없습니다.</li>";
         });
     }
   </script>
