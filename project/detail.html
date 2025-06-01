@@ -10,49 +10,61 @@
       padding: 20px;
       background: #f9f9f9;
     }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
     .info {
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
       background: white;
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
     }
     #wikiDescriptionContainer {
+      margin-top: 20px;
       max-width: 700px;
-      margin: auto;
-      background: #fff8dc;
-      border: 2px solid #f0c040;
+      margin-left: auto;
+      margin-right: auto;
+      background: #e9ecef;
       border-radius: 12px;
-      padding: 20px;
-      font-size: 15px;
-      line-height: 1.5;
-      color: #333;
-      min-height: 150px;
-      margin-bottom: 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+      padding: 15px;
+      min-height: 120px;
+      position: relative;
     }
-    #wikiDescription {
-      white-space: pre-wrap;
-      flex: 1;
-      margin-right: 15px;
-    }
-    #wikiButton {
-      padding: 8px 14px;
+    #wikiDescriptionContainer button {
+      position: absolute;
+      top: 15px;
+      right: 15px;
       background-color: #007bff;
       border: none;
-      border-radius: 6px;
       color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
       cursor: pointer;
-      font-weight: bold;
-      white-space: nowrap;
+      font-size: 14px;
+    }
+    #youtubeContainer {
+      margin-top: 30px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+      height: 400px;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    #youtubeFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
     }
     #chartContainer {
+      margin-top: 30px;
       max-width: 700px;
-      margin: auto;
+      margin-left: auto;
+      margin-right: auto;
     }
   </style>
 </head>
@@ -64,8 +76,12 @@
   </div>
 
   <div id="wikiDescriptionContainer">
-    <div id="wikiDescription">위키 설명 로딩 중...</div>
-    <button id="wikiButton" style="display:none;">위키피디아 바로가기</button>
+    <div id="wikiDescription">위키피디아 설명 로딩 중...</div>
+    <button id="wikiLinkBtn" title="위키피디아 바로가기">위키피디아 보기</button>
+  </div>
+
+  <div id="youtubeContainer">
+    <iframe id="youtubeFrame" src="" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
   </div>
 
   <div id="chartContainer">
@@ -83,13 +99,11 @@
     } else {
       document.getElementById("stockTitle").textContent = `${symbol} 상세 정보`;
 
-      // 가격 정보 가져오기
+      // 1. 현재 가격 정보 가져오기 (Twelve Data)
       fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          if (data.code) {
-            throw new Error(data.message);
-          }
+          if (data.code) throw new Error(data.message);
           document.getElementById("currentPrice").textContent = `$${data.price}`;
           document.getElementById("prevClose").textContent = `$${data.previous_close}`;
         })
@@ -99,19 +113,79 @@
           document.getElementById("prevClose").textContent = "데이터 없음";
         });
 
-      // 차트 데이터 (1시간 간격, 24시간치)
+      // 2. 위키피디아 한국어 설명 가져오기
+      async function fetchWikiDescription(name) {
+        const apiUrl = `https://ko.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`;
+        try {
+          const res = await fetch(apiUrl);
+          if (!res.ok) throw new Error("페이지 없음");
+          const data = await res.json();
+          return data.extract || "설명 정보가 없습니다.";
+        } catch {
+          return "설명 정보를 불러올 수 없습니다.";
+        }
+      }
+
+      // 각 회사명과 위키 검색명 매핑 (필요시 수정)
+      const wikiNameMap = {
+        "AAPL": "애플",
+        "MSFT": "마이크로소프트",
+        "NVDA": "엔비디아",
+        "GOOGL": "알파벳(기업)",
+        "AMZN": "아마존",
+        "META": "메타 (기업)",
+        "TSLA": "테슬라",
+        "AVGO": "브로드컴",
+        "COST": "코스트코",
+        "ASML": "ASML"
+      };
+
+      const wikiTitle = wikiNameMap[symbol] || symbol;
+      const wikiDescriptionDiv = document.getElementById("wikiDescription");
+      const wikiLinkBtn = document.getElementById("wikiLinkBtn");
+
+      fetchWikiDescription(wikiTitle).then(text => {
+        wikiDescriptionDiv.textContent = text;
+      });
+
+      wikiLinkBtn.addEventListener("click", () => {
+        const url = `https://ko.wikipedia.org/wiki/${encodeURIComponent(wikiTitle)}`;
+        window.open(url, "_blank");
+      });
+
+      // 3. 유튜브 공식 채널 매핑 및 iframe 세팅
+      const youtubeMap = {
+        "AAPL": "https://www.youtube.com/embed/4Y7i31aWrxY",
+        "MSFT": "https://www.youtube.com/embed/UWc-bWQp06Y",
+        "NVDA": "https://www.youtube.com/embed/NW6k9Kec0sA",
+        "GOOGL": "https://www.youtube.com/embed/7KHxMf8v4Y8",
+        "AMZN": "https://www.youtube.com/embed/-Ikb5iv2gXE",
+        "META": "https://www.youtube.com/embed/NiUGOY7PtLc",
+        "TSLA": "https://www.youtube.com/embed/rg5b54CpTTc",
+        "AVGO": "https://www.youtube.com/embed/CHhANzheUKs",
+        "COST": "https://www.youtube.com/embed/68OnWJGE77c",
+        "ASML": "https://www.youtube.com/embed/T6pTAU9cPC8"
+      };
+
+      const youtubeFrame = document.getElementById("youtubeFrame");
+      if (youtubeMap[symbol]) {
+        youtubeFrame.src = youtubeMap[symbol];
+      } else {
+        youtubeFrame.srcdoc = "<p style='color:white; text-align:center; padding:20px;'>유튜브 채널 정보가 없습니다.</p>";
+      }
+
+      // 4. 차트 데이터 가져오기 (Twelve Data 1시간 간격 24개)
       fetch(`https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          if (data.code) {
-            throw new Error(data.message);
-          }
-          const labels = data.values.map(val => val.datetime).reverse();
-          const prices = data.values.map(val => val.close).reverse();
+          if (data.code) throw new Error(data.message);
+
+          const labels = data.values.map(v => v.datetime).reverse();
+          const prices = data.values.map(v => v.close).reverse();
 
           const ctx = document.getElementById("stockChart").getContext("2d");
           new Chart(ctx, {
-            type: 'line',
+            type: "line",
             data: {
               labels: labels,
               datasets: [{
@@ -126,14 +200,9 @@
             options: {
               responsive: true,
               scales: {
-                x: {
-                  ticks: { maxTicksLimit: 8 }
-                },
+                x: { ticks: { maxTicksLimit: 8 } },
                 y: {
-                  title: {
-                    display: true,
-                    text: '가격 ($)'
-                  }
+                  title: { display: true, text: "가격 ($)" }
                 }
               }
             }
@@ -141,73 +210,8 @@
         })
         .catch(err => {
           console.error("차트 불러오기 오류:", err);
-          document.getElementById("chartContainer").innerHTML = "<p style='color:red;'>차트를 불러올 수 없습니다.</p>";
+          document.getElementById("chartContainer").innerHTML = "<p style='color:red; text-align:center;'>차트를 불러올 수 없습니다.</p>";
         });
-
-      // 나무위키 문서명 매핑 (기존)
-      const wikiMap = {
-        "AAPL": "애플",
-        "MSFT": "마이크로소프트",
-        "NVDA": "엔비디아",
-        "GOOGL": "구글",
-        "AMZN": "아마존",
-        "META": "메타_플랫폼스",
-        "TSLA": "테슬라",
-        "AVGO": "브로드컴",
-        "COST": "코스트코",
-        "ASML": "ASML"
-      };
-
-      // 한국어 위키피디아 페이지명 매핑 (바로가기용)
-      const wikiPediaMap = {
-        "AAPL": "애플",
-        "MSFT": "마이크로소프트",
-        "NVDA": "엔비디아",
-        "GOOGL": "구글",
-        "AMZN": "아마존",
-        "META": "메타 플랫폼스",
-        "TSLA": "테슬라",
-        "AVGO": "브로드컴",
-        "COST": "코스트코",
-        "ASML": "ASML"
-      };
-
-      const wikiTitle = wikiMap[symbol] || null;
-      const wikiPediaTitle = wikiPediaMap[symbol] || null;
-
-      if (!wikiTitle) {
-        document.getElementById("wikiDescription").textContent = "위키 설명을 찾을 수 없습니다.";
-      } else {
-        // 나무위키 CORS 우회 fetch
-        const url = encodeURIComponent(`https://namu.wiki/w/${wikiTitle}`);
-
-        fetch(`https://api.allorigins.win/get?url=${url}`)
-          .then(res => {
-            if (!res.ok) throw new Error("프록시 서버 오류");
-            return res.json();
-          })
-          .then(data => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(data.contents, "text/html");
-            const contentDiv = doc.querySelector("#wiki-content");
-            if (!contentDiv) throw new Error("본문 추출 실패");
-            const textContent = contentDiv.textContent.trim().slice(0, 500) + " ...";
-            document.getElementById("wikiDescription").textContent = textContent;
-
-            // 버튼 보이기 & 링크 연결
-            if (wikiPediaTitle) {
-              const btn = document.getElementById("wikiButton");
-              btn.style.display = "inline-block";
-              btn.onclick = () => {
-                window.open(`https://ko.wikipedia.org/wiki/${encodeURIComponent(wikiPediaTitle)}`, "_blank");
-              };
-            }
-          })
-          .catch(err => {
-            console.error("위키 설명 로딩 실패:", err);
-            document.getElementById("wikiDescription").textContent = "위키 설명을 불러올 수 없습니다.";
-          });
-      }
     }
   </script>
 </body>
