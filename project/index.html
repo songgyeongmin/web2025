@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NASDAQ TOP 10 with 뉴스</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NASDAQ TOP 10</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,7 +17,7 @@
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 30px;
+      gap: 20px;
     }
     .card {
       background: white;
@@ -26,11 +26,9 @@
       padding: 20px;
       position: relative;
       transition: transform 0.3s ease;
-      display: flex;
-      flex-direction: column;
     }
     .card:hover {
-      transform: scale(1.05);
+      transform: scale(1.02);
     }
     .card h2 {
       font-size: 18px;
@@ -43,12 +41,10 @@
       height: 20px;
       margin-right: 8px;
       border-radius: 4px;
-      object-fit: contain;
     }
     .card h2 a {
       color: #007bff;
       text-decoration: none;
-      flex-grow: 1;
     }
     .price {
       font-weight: bold;
@@ -61,12 +57,9 @@
       padding: 8px;
       font-size: 14px;
       resize: none;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-      margin-bottom: 10px;
     }
     button {
+      margin-top: 10px;
       padding: 6px 12px;
       background-color: #007bff;
       border: none;
@@ -74,40 +67,37 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 14px;
-      transition: background-color 0.3s ease;
-      margin-bottom: 10px;
-      align-self: flex-start;
-    }
-    button:hover {
-      background-color: #0056b3;
     }
     .save-message {
+      margin-top: 5px;
       font-size: 13px;
       color: green;
-      margin-bottom: 10px;
-      display: none;
     }
-    .news-list {
-      max-height: 150px;
-      overflow-y: auto;
-      border-top: 1px solid #ddd;
-      padding-top: 10px;
+    .news {
+      margin-top: 15px;
     }
-    .news-item {
+    .news h3 {
       font-size: 14px;
-      margin-bottom: 8px;
+      margin-bottom: 5px;
     }
-    .news-item a {
-      color: #007bff;
+    .news ul {
+      padding-left: 18px;
+      font-size: 13px;
+    }
+    .news ul li {
+      margin-bottom: 4px;
+    }
+    .news ul li a {
+      color: #555;
       text-decoration: none;
     }
-    .news-item a:hover {
+    .news ul li a:hover {
       text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <h1>NASDAQ TOP 10 - 뉴스 포함</h1>
+  <h1>NASDAQ TOP 10</h1>
   <div class="grid" id="stockGrid"></div>
 
   <script>
@@ -137,19 +127,21 @@
       card.innerHTML = `
         <h2>
           <img src="${stock.logo}" alt="${stock.name} 로고" class="logo" />
-          <a href="detail.html?symbol=${stock.symbol}" target="_blank" rel="noopener noreferrer">${stock.name} (${stock.symbol})</a>
+          <a href="detail.html?symbol=${stock.symbol}">${stock.name} (${stock.symbol})</a>
         </h2>
         <div class="price" id="price_${stock.symbol}">현재가: 로딩 중...</div>
         <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
         <button class="saveBtn">저장</button>
-        <div class="save-message">✅ 저장 완료!</div>
-        <div class="news-list" id="news_${stock.symbol}"><em>뉴스 불러오는 중...</em></div>
+        <div class="save-message" style="display:none;">✅ 저장 완료!</div>
+        <div class="news" id="news_${stock.symbol}">
+          <h3>📢 최근 뉴스</h3>
+          <ul><li>불러오는 중...</li></ul>
+        </div>
       `;
 
       const textarea = card.querySelector("textarea");
       const saveBtn = card.querySelector(".saveBtn");
       const message = card.querySelector(".save-message");
-      const newsContainer = card.querySelector(`#news_${stock.symbol}`);
 
       saveBtn.addEventListener("click", () => {
         localStorage.setItem(`note_${stock.symbol}`, textarea.value);
@@ -161,40 +153,35 @@
         }, 2000);
       });
 
-      // 가격 가져오기 (Twelve Data)
-      fetch(`https://api.twelvedata.com/quote?symbol=${stock.symbol}&apikey=${API_KEY}`)
+      // 가격 불러오기
+      fetch(`https://finnhub.io/api/v1/quote?symbol=${stock.symbol}&token=${API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          if (data.price) {
-            document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${data.price}`;
-          } else {
-            document.getElementById(`price_${stock.symbol}`).textContent = "현재가: 데이터 없음";
-          }
+          const price = data.c;
+          document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${price}`;
         })
         .catch(err => {
           console.error("가격 오류", stock.symbol, err);
           document.getElementById(`price_${stock.symbol}`).textContent = "현재가: 오류 발생";
         });
 
-      // 뉴스 가져오기 (Twelve Data 뉴스 API)
-      fetch(`https://api.twelvedata.com/news?symbol=${stock.symbol}&apikey=${API_KEY}`)
+      // 뉴스 불러오기 (Yahoo Finance RSS)
+      const newsContainer = card.querySelector(`#news_${stock.symbol} ul`);
+      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://feeds.finance.yahoo.com/rss/2.0/headline?s=${stock.symbol}&region=US&lang=en-US`)}`)
         .then(res => res.json())
         .then(data => {
-          if (!data.news || data.news.length === 0) {
-            newsContainer.innerHTML = "<em>뉴스 없음</em>";
-            return;
-          }
-          // 뉴스 5개만 표시
-          const newsItems = data.news.slice(0, 5).map(n => `
-            <div class="news-item">
-              <a href="${n.url}" target="_blank" rel="noopener noreferrer">${n.title}</a>
-            </div>
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(data.contents, "application/xml");
+          const items = Array.from(xml.querySelectorAll("item")).slice(0, 3);
+          newsContainer.innerHTML = items.map(item => `
+            <li><a href="${item.querySelector("link").textContent}" target="_blank">
+              ${item.querySelector("title").textContent}
+            </a></li>
           `).join("");
-          newsContainer.innerHTML = newsItems;
         })
         .catch(err => {
-          console.error("뉴스 불러오기 오류", stock.symbol, err);
-          newsContainer.innerHTML = "<em>뉴스 불러오기 실패</em>";
+          console.error("뉴스 오류", stock.symbol, err);
+          newsContainer.innerHTML = "<li>뉴스 불러오기 실패</li>";
         });
 
       grid.appendChild(card);
