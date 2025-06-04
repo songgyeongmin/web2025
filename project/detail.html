@@ -19,13 +19,33 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     #chartContainer {
-      margin-top: 40px;
       max-width: 700px;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 0 auto 30px;
     }
-    h1, h3 {
-      text-align: center;
+    h1 {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    h1 img {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+    }
+    .btn-link {
+      display: inline-block;
+      margin-left: 10px;
+      padding: 6px 12px;
+      background-color: #007bff;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .btn-link:hover {
+      background-color: #0056b3;
     }
     ul {
       padding-left: 20px;
@@ -44,6 +64,7 @@
 </head>
 <body>
   <h1 id="stockTitle">상세 정보</h1>
+
   <div class="info">
     <div>현재가: <span id="currentPrice">로딩 중...</span></div>
     <div>전일 종가: <span id="prevClose">-</span></div>
@@ -66,17 +87,40 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const TWELVE_API_KEY = "1a4a7a2f69ba42c0bc6edb908ee842aa";
-    const FINNHUB_API_KEY = "cftv9iaad3ieib3cgn7g"; // 무료 키는 finnhub.io 가입 후 받으셔야 합니다.
-
     const params = new URLSearchParams(window.location.search);
     const symbol = params.get("symbol");
 
-    if (!symbol) {
-      alert("종목이 없습니다.");
-    } else {
-      document.getElementById("stockTitle").textContent = `${symbol} 상세 정보`;
+    const companyInfo = {
+      AAPL: { name: "Apple", logo: "https://logo.clearbit.com/apple.com", youtube: "https://www.youtube.com/@Apple" },
+      MSFT: { name: "Microsoft", logo: "https://logo.clearbit.com/microsoft.com", youtube: "https://www.youtube.com/@Microsoft" },
+      NVDA: { name: "NVIDIA", logo: "https://logo.clearbit.com/nvidia.com", youtube: "https://www.youtube.com/@NVIDIA" },
+      GOOGL: { name: "Alphabet", logo: "https://logo.clearbit.com/abc.xyz", youtube: "https://www.youtube.com/@Google" },
+      AMZN: { name: "Amazon", logo: "https://logo.clearbit.com/amazon.com", youtube: "https://www.youtube.com/@AmazonNews" },
+      META: { name: "Meta", logo: "https://logo.clearbit.com/meta.com", youtube: "https://www.youtube.com/@Meta" },
+      TSLA: { name: "Tesla", logo: "https://logo.clearbit.com/tesla.com", youtube: "https://www.youtube.com/@Tesla" },
+      AVGO: { name: "Broadcom", logo: "https://logo.clearbit.com/broadcom.com", youtube: "https://www.youtube.com/@BroadcomInc" },
+      COST: { name: "Costco", logo: "https://logo.clearbit.com/costco.com", youtube: "https://www.youtube.com/@Costco" },
+      ASML: { name: "ASML", logo: "https://logo.clearbit.com/asml.com", youtube: "https://www.youtube.com/@ASMLcompany" }
+    };
 
-      // 📈 현재 가격 및 전일 종가
+    const wikiMap = {
+      "AAPL": "애플", "MSFT": "마이크로소프트", "NVDA": "엔비디아", "GOOGL": "알파벳 (기업)",
+      "AMZN": "아마존닷컴", "META": "메타 플랫폼스", "TSLA": "테슬라", "AVGO": "브로드컴",
+      "COST": "코스트코", "ASML": "ASML"
+    };
+
+    if (!symbol || !companyInfo[symbol]) {
+      alert("유효하지 않은 종목입니다.");
+    } else {
+      const company = companyInfo[symbol];
+      const titleArea = document.getElementById("stockTitle");
+      titleArea.innerHTML = `
+        <img src="${company.logo}" alt="${symbol} 로고">
+        ${company.name} (${symbol})
+        <a class="btn-link" href="${company.youtube}" target="_blank">📺 유튜브</a>
+      `;
+
+      // 현재가
       fetch(`https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${TWELVE_API_KEY}`)
         .then(res => res.json())
         .then(data => {
@@ -89,17 +133,15 @@
           document.getElementById("prevClose").textContent = "데이터 없음";
         });
 
-      // 📊 주가 차트
+      // 차트
       fetch(`https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=24&apikey=${TWELVE_API_KEY}`)
         .then(res => res.json())
         .then(data => {
-          if (data.code) throw new Error(data.message);
-          const labels = data.values.map(val => val.datetime).reverse();
-          const prices = data.values.map(val => val.close).reverse();
-
+          const labels = data.values.map(v => v.datetime).reverse();
+          const prices = data.values.map(v => v.close).reverse();
           const ctx = document.getElementById("stockChart").getContext("2d");
           new Chart(ctx, {
-            type: 'line',
+            type: "line",
             data: {
               labels: labels,
               datasets: [{
@@ -121,17 +163,11 @@
           });
         })
         .catch(() => {
-          document.getElementById("chartContainer").innerHTML = "<p style='color:red;'>차트를 불러올 수 없습니다.</p>";
+          document.getElementById("chartContainer").innerHTML = "<p style='color:red;'>차트 로딩 실패</p>";
         });
 
-      // 📝 위키백과 설명
-      const wikiMap = {
-        "AAPL": "애플", "MSFT": "마이크로소프트", "NVDA": "엔비디아", "GOOGL": "알파벳 (기업)",
-        "AMZN": "아마존닷컴", "META": "메타 플랫폼스", "TSLA": "테슬라", "AVGO": "브로드컴",
-        "COST": "코스트코", "ASML": "ASML"
-      };
+      // 위키 설명
       const wikiTitle = wikiMap[symbol];
-
       if (wikiTitle) {
         fetch(`https://ko.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`)
           .then(res => res.json())
@@ -142,28 +178,26 @@
             document.getElementById("wikiSummary").textContent = "설명 로딩 실패";
           });
       } else {
-        document.getElementById("wikiSummary").textContent = "이 종목에 대한 설명은 준비되지 않았습니다.";
+        document.getElementById("wikiSummary").textContent = "이 종목에 대한 설명은 없습니다.";
       }
 
-      // 📰 관련 뉴스 (최대 5개)
-      fetch(`https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=2024-06-01&to=2025-06-01&token=${FINNHUB_API_KEY}`)
+      // 뉴스
+      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://feeds.finance.yahoo.com/rss/2.0/headline?s=${symbol}&region=US&lang=en-US`)}`)
         .then(res => res.json())
-        .then(newsData => {
-          const newsList = document.getElementById("newsList");
-          newsList.innerHTML = "";
-
-          if (Array.isArray(newsData) && newsData.length > 0) {
-            newsData.slice(0, 5).forEach(article => {
-              const li = document.createElement("li");
-              li.innerHTML = `<a href="${article.url}" target="_blank">${article.headline}</a>`;
-              newsList.appendChild(li);
-            });
-          } else {
-            newsList.innerHTML = "<li>관련 뉴스가 없습니다.</li>";
-          }
+        .then(data => {
+          const parser = new DOMParser();
+          const xml = parser.parseFromString(data.contents, "application/xml");
+          const items = Array.from(xml.querySelectorAll("item")).slice(0, 5);
+          const list = document.getElementById("newsList");
+          list.innerHTML = "";
+          items.forEach(item => {
+            const li = document.createElement("li");
+            li.innerHTML = `<a href="${item.querySelector("link").textContent}" target="_blank">${item.querySelector("title").textContent}</a>`;
+            list.appendChild(li);
+          });
         })
         .catch(() => {
-          document.getElementById("newsList").innerHTML = "<li>뉴스 로딩 실패</li>";
+          document.getElementById("newsList").innerHTML = "<li>뉴스를 불러올 수 없습니다.</li>";
         });
     }
   </script>
