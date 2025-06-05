@@ -1,5 +1,5 @@
 let xhr = new XMLHttpRequest();
-xhr.open('GET', 'student.json', true);
+xhr.open('GET', 'js/student.json', true);
 xhr.send();
 
 xhr.onreadystatechange = function () {
