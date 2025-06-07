@@ -75,7 +75,10 @@
   </div>
 
   <div id="description">
-    <h3>회사 설명</h3>
+    <h3>
+      회사 설명
+      <a id="wikiLink" class="btn-link" href="#" target="_blank" style="margin-left: 10px;">📖 위키백과</a>
+    </h3>
     <p id="wikiSummary">불러오는 중...</p>
   </div>
 
@@ -166,9 +169,14 @@
           document.getElementById("chartContainer").innerHTML = "<p style='color:red;'>차트 로딩 실패</p>";
         });
 
-      // 위키 설명
+      // 위키 설명 및 링크
       const wikiTitle = wikiMap[symbol];
+      const wikiLink = document.getElementById("wikiLink");
+
       if (wikiTitle) {
+        const wikiUrl = `https://ko.wikipedia.org/wiki/${encodeURIComponent(wikiTitle)}`;
+        wikiLink.href = wikiUrl;
+
         fetch(`https://ko.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`)
           .then(res => res.json())
           .then(data => {
@@ -179,6 +187,7 @@
           });
       } else {
         document.getElementById("wikiSummary").textContent = "이 종목에 대한 설명은 없습니다.";
+        wikiLink.style.display = "none";
       }
 
       // 뉴스

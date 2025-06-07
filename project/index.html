@@ -49,6 +49,15 @@
     .price {
       font-weight: bold;
       color: #333;
+      margin-bottom: 5px;
+    }
+    .prev-close {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .change {
+      font-size: 14px;
       margin-bottom: 10px;
     }
     textarea {
@@ -57,9 +66,9 @@
       padding: 8px;
       font-size: 14px;
       resize: none;
+      margin-bottom: 10px;
     }
     button {
-      margin-top: 10px;
       padding: 6px 12px;
       background-color: #007bff;
       border: none;
@@ -130,6 +139,8 @@
           <a href="detail.html?symbol=${stock.symbol}">${stock.name} (${stock.symbol})</a>
         </h2>
         <div class="price" id="price_${stock.symbol}">현재가: 로딩 중...</div>
+        <div class="prev-close" id="prev_${stock.symbol}">전일 종가: -</div>
+        <div class="change" id="change_${stock.symbol}">전일 대비: -</div>
         <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
         <button class="saveBtn">저장</button>
         <div class="save-message" style="display:none;">✅ 저장 완료!</div>
@@ -158,14 +169,18 @@
         .then(res => res.json())
         .then(data => {
           const price = data.c;
+          const prevClose = data.pc;
+          const changePercent = ((price - prevClose) / prevClose * 100).toFixed(2);
+
           document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${price}`;
+          document.getElementById(`prev_${stock.symbol}`).textContent = `전일 종가: $${prevClose}`;
+          document.getElementById(`change_${stock.symbol}`).textContent = `전일 대비: ${changePercent}%`;
         })
         .catch(err => {
           console.error("가격 오류", stock.symbol, err);
-          document.getElementById(`price_${stock.symbol}`).textContent = "현재가: 오류 발생";
         });
 
-      // 뉴스 불러오기 (Yahoo Finance RSS)
+      // 뉴스 불러오기
       const newsContainer = card.querySelector(`#news_${stock.symbol} ul`);
       fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://feeds.finance.yahoo.com/rss/2.0/headline?s=${stock.symbol}&region=US&lang=en-US`)}`)
         .then(res => res.json())
