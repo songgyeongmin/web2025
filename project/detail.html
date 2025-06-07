@@ -67,6 +67,7 @@
       height: 80px;
       padding: 8px;
       font-size: 14px;
+      box-sizing: border-box;
     }
     #saveMemoBtn {
       margin-top: 10px;
@@ -156,7 +157,7 @@
         .then(res => res.json())
         .then(data => {
           if (data.code) throw new Error(data.message);
-          document.getElementById("currentPrice").textContent = `$${data.price}`;
+          document.getElementById("currentPrice").textContent = `${data.price ? "$" + String(data.price) : "장 시작 전"}`;
           document.getElementById("prevClose").textContent = `$${data.previous_close}`;
         })
         .catch(() => {
