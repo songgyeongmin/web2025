@@ -2,205 +2,170 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>NASDAQ TOP 10</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>상세 정보</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
       background: #f4f4f4;
+      max-width: 600px;
+      margin: auto;
     }
     h1 {
       text-align: center;
       margin-bottom: 30px;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-    }
-    .card {
+    .stock-info {
       background: white;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       padding: 20px;
-      position: relative;
-      transition: transform 0.3s ease;
+      margin-bottom: 30px;
     }
-    .card:hover {
-      transform: scale(1.02);
-    }
-    .card h2 {
-      font-size: 18px;
-      margin-bottom: 10px;
+    .stock-info h2 {
       display: flex;
       align-items: center;
+      font-size: 24px;
     }
-    .card h2 img.logo {
-      width: 20px;
-      height: 20px;
-      margin-right: 8px;
+    .stock-info img.logo {
+      width: 30px;
+      height: 30px;
+      margin-right: 12px;
       border-radius: 4px;
     }
-    .card h2 a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    .price {
-      font-weight: bold;
-      color: #333;
-      margin-bottom: 5px;
-    }
-    .prev-close {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 10px;
-    }
-    .change {
-      font-size: 14px;
-      margin-bottom: 10px;
+    .price, .prev-close, .change {
+      font-size: 18px;
+      margin: 10px 0;
     }
     textarea {
       width: 100%;
-      height: 60px;
-      padding: 8px;
-      font-size: 14px;
+      height: 100px;
+      padding: 10px;
+      font-size: 16px;
       resize: none;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
     button {
-      padding: 6px 12px;
+      padding: 10px 18px;
       background-color: #007bff;
       border: none;
       color: white;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 16px;
     }
     .save-message {
-      margin-top: 5px;
-      font-size: 13px;
-      color: green;
-    }
-    .news {
-      margin-top: 15px;
-    }
-    .news h3 {
+      margin-top: 8px;
       font-size: 14px;
-      margin-bottom: 5px;
-    }
-    .news ul {
-      padding-left: 18px;
-      font-size: 13px;
-    }
-    .news ul li {
-      margin-bottom: 4px;
-    }
-    .news ul li a {
-      color: #555;
-      text-decoration: none;
-    }
-    .news ul li a:hover {
-      text-decoration: underline;
+      color: green;
     }
   </style>
 </head>
 <body>
-  <h1>NASDAQ TOP 10</h1>
-  <div class="grid" id="stockGrid"></div>
+  <h1>상세 정보</h1>
+  <div class="stock-info" id="stockInfo">
+    <h2><img src="" alt="로고" class="logo" /> <span id="stockName">로딩중...</span></h2>
+    <div class="price" id="price">현재가: -</div>
+    <div class="prev-close" id="prevClose">전일 종가: -</div>
+    <div class="change" id="change">전일 대비: -</div>
+  </div>
+
+  <textarea id="memo" placeholder="메모를 남겨보세요..."></textarea>
+  <button id="saveBtn">저장</button>
+  <div class="save-message" id="saveMessage" style="display:none;">✅ 저장 완료!</div>
 
   <script>
-    const API_KEY = "1a4a7a2f69ba42c0bc6edb908ee842aa";
+    const TWELVE_API_KEY = "1a4a7a2f69ba42c0bc6edb908ee842aa";
 
-    const stocks = [
-      { symbol: "AAPL", name: "Apple", logo: "https://logo.clearbit.com/apple.com" },
-      { symbol: "MSFT", name: "Microsoft", logo: "https://logo.clearbit.com/microsoft.com" },
-      { symbol: "NVDA", name: "NVIDIA", logo: "https://logo.clearbit.com/nvidia.com" },
-      { symbol: "GOOGL", name: "Alphabet", logo: "https://logo.clearbit.com/abc.xyz" },
-      { symbol: "AMZN", name: "Amazon", logo: "https://logo.clearbit.com/amazon.com" },
-      { symbol: "META", name: "Meta", logo: "https://logo.clearbit.com/meta.com" },
-      { symbol: "TSLA", name: "Tesla", logo: "https://logo.clearbit.com/tesla.com" },
-      { symbol: "AVGO", name: "Broadcom", logo: "https://logo.clearbit.com/broadcom.com" },
-      { symbol: "COST", name: "Costco", logo: "https://logo.clearbit.com/costco.com" },
-      { symbol: "ASML", name: "ASML Holding", logo: "https://logo.clearbit.com/asml.com" }
-    ];
+    // URL에서 심볼 가져오기
+    const params = new URLSearchParams(window.location.search);
+    const symbol = params.get("symbol");
 
-    const grid = document.getElementById("stockGrid");
+    if (!symbol) {
+      alert("잘못된 접근입니다. 심볼이 없습니다.");
+      throw new Error("심볼이 없음");
+    }
 
-    stocks.forEach(stock => {
-      const card = document.createElement("div");
-      card.className = "card";
+    const stockNameEl = document.getElementById("stockName");
+    const priceEl = document.getElementById("price");
+    const prevCloseEl = document.getElementById("prevClose");
+    const changeEl = document.getElementById("change");
+    const logoEl = document.querySelector(".logo");
+    const memoEl = document.getElementById("memo");
+    const saveBtn = document.getElementById("saveBtn");
+    const saveMessage = document.getElementById("saveMessage");
 
-      const savedNote = localStorage.getItem(`note_${stock.symbol}`) || "";
+    // 심볼별 회사명과 로고 (필요하면 더 추가)
+    const stockInfo = {
+      AAPL: { name: "Apple", logo: "https://logo.clearbit.com/apple.com" },
+      MSFT: { name: "Microsoft", logo: "https://logo.clearbit.com/microsoft.com" },
+      NVDA: { name: "NVIDIA", logo: "https://logo.clearbit.com/nvidia.com" },
+      GOOGL: { name: "Alphabet", logo: "https://logo.clearbit.com/abc.xyz" },
+      AMZN: { name: "Amazon", logo: "https://logo.clearbit.com/amazon.com" },
+      META: { name: "Meta", logo: "https://logo.clearbit.com/meta.com" },
+      TSLA: { name: "Tesla", logo: "https://logo.clearbit.com/tesla.com" },
+      AVGO: { name: "Broadcom", logo: "https://logo.clearbit.com/broadcom.com" },
+      COST: { name: "Costco", logo: "https://logo.clearbit.com/costco.com" },
+      ASML: { name: "ASML Holding", logo: "https://logo.clearbit.com/asml.com" },
+    };
 
-      card.innerHTML = `
-        <h2>
-          <img src="${stock.logo}" alt="${stock.name} 로고" class="logo" />
-          <a href="detail.html?symbol=${stock.symbol}">${stock.name} (${stock.symbol})</a>
-        </h2>
-        <div class="price" id="price_${stock.symbol}">현재가: 로딩 중...</div>
-        <div class="prev-close" id="prev_${stock.symbol}">전일 종가: -</div>
-        <div class="change" id="change_${stock.symbol}">전일 대비: -</div>
-        <textarea placeholder="메모를 남겨보세요...">${savedNote}</textarea>
-        <button class="saveBtn">저장</button>
-        <div class="save-message" style="display:none;">✅ 저장 완료!</div>
-        <div class="news" id="news_${stock.symbol}">
-          <h3>📢 최근 뉴스</h3>
-          <ul><li>불러오는 중...</li></ul>
-        </div>
-      `;
+    const info = stockInfo[symbol.toUpperCase()] || { name: symbol, logo: "" };
+    stockNameEl.textContent = `${info.name} (${symbol.toUpperCase()})`;
+    if(info.logo) logoEl.src = info.logo;
+    else logoEl.style.display = "none";
 
-      const textarea = card.querySelector("textarea");
-      const saveBtn = card.querySelector(".saveBtn");
-      const message = card.querySelector(".save-message");
+    // 저장된 메모 불러오기
+    memoEl.value = localStorage.getItem(`note_${symbol.toUpperCase()}`) || "";
 
-      saveBtn.addEventListener("click", () => {
-        localStorage.setItem(`note_${stock.symbol}`, textarea.value);
-        message.style.display = "block";
-        saveBtn.textContent = "저장됨";
-        setTimeout(() => {
-          message.style.display = "none";
-          saveBtn.textContent = "저장";
-        }, 2000);
+    saveBtn.addEventListener("click", () => {
+      localStorage.setItem(`note_${symbol.toUpperCase()}`, memoEl.value);
+      saveMessage.style.display = "block";
+      setTimeout(() => {
+        saveMessage.style.display = "none";
+      }, 2000);
+    });
+
+    // 현재가 불러오기
+    fetch(`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${TWELVE_API_KEY}`)
+      .then(res => res.json())
+      .then(data => {
+        if(data.price) {
+          priceEl.textContent = `현재가: $${parseFloat(data.price).toFixed(2)}`;
+        } else {
+          priceEl.textContent = "현재가: 데이터 없음";
+        }
+      })
+      .catch(err => {
+        console.error("현재가 오류", err);
+        priceEl.textContent = "현재가: 오류";
       });
 
-      // 가격 불러오기
-      fetch(`https://finnhub.io/api/v1/quote?symbol=${stock.symbol}&token=${API_KEY}`)
-        .then(res => res.json())
-        .then(data => {
-          const price = data.c;
-          const prevClose = data.pc;
-          const changePercent = ((price - prevClose) / prevClose * 100).toFixed(2);
+    // 전일 종가 및 전일 대비 (time_series API 2일치)
+    fetch(`https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1day&apikey=${TWELVE_API_KEY}&outputsize=2`)
+      .then(res => res.json())
+      .then(data => {
+        if(data.values && data.values.length >= 2) {
+          const latest = data.values[0];
+          const prev = data.values[1];
 
-          document.getElementById(`price_${stock.symbol}`).textContent = `현재가: $${price}`;
-          document.getElementById(`prev_${stock.symbol}`).textContent = `전일 종가: $${prevClose}`;
-          document.getElementById(`change_${stock.symbol}`).textContent = `전일 대비: ${changePercent}%`;
-        })
-        .catch(err => {
-          console.error("가격 오류", stock.symbol, err);
-        });
+          const prevClose = parseFloat(prev.close);
+          const latestClose = parseFloat(latest.close);
+          const changeAmount = (latestClose - prevClose).toFixed(2);
+          const changePercent = ((changeAmount / prevClose) * 100).toFixed(2);
 
-      // 뉴스 불러오기
-      const newsContainer = card.querySelector(`#news_${stock.symbol} ul`);
-      fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(`https://feeds.finance.yahoo.com/rss/2.0/headline?s=${stock.symbol}&region=US&lang=en-US`)}`)
-        .then(res => res.json())
-        .then(data => {
-          const parser = new DOMParser();
-          const xml = parser.parseFromString(data.contents, "application/xml");
-          const items = Array.from(xml.querySelectorAll("item")).slice(0, 3);
-          newsContainer.innerHTML = items.map(item => `
-            <li><a href="${item.querySelector("link").textContent}" target="_blank">
-              ${item.querySelector("title").textContent}
-            </a></li>
-          `).join("");
-        })
-        .catch(err => {
-          console.error("뉴스 오류", stock.symbol, err);
-          newsContainer.innerHTML = "<li>뉴스 불러오기 실패</li>";
-        });
-
-      grid.appendChild(card);
-    });
+          prevCloseEl.textContent = `전일 종가: $${prevClose.toFixed(2)}`;
+          changeEl.textContent = `전일 대비: ${changeAmount} (${changePercent}%)`;
+        } else {
+          prevCloseEl.textContent = "전일 종가: 데이터 없음";
+          changeEl.textContent = "전일 대비: 데이터 없음";
+        }
+      })
+      .catch(err => {
+        console.error("전일 종가/전일 대비 오류", err);
+        prevCloseEl.textContent = "전일 종가: 오류";
+        changeEl.textContent = "전일 대비: 오류";
+      });
   </script>
 </body>
 </html>
