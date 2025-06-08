@@ -1,18 +1,14 @@
 const today = new Date();
-// console.log(today);
-// console.log(today.toDateString());
 
-/******* 날짜와 요일 표시하기 ********/
 const displayDate = document.querySelector('#today');
 
-const year = today.getFullYear();    // 연도
-const month = today.getMonth() + 1;   // 월(0~11) + 1
-const date = today.getDate();  // 날짜
-const day1 = today.getDay();  // 요일 (0~6)
+const year = today.getFullYear();   
+const month = today.getMonth() + 1;  
+const date = today.getDate(); 
+const day1 = today.getDay();  
 
-let day2 = " ";   // 요일명을 저장할 변수
+let day2 = " ";   
 
-// 반환된 요일(숫자)을 체크해서 요일명 지정
 switch(day1) {
   case 0 : 
     day2 = "일요일"; break;
@@ -31,10 +27,6 @@ switch(day1) {
 }
 
 displayDate.innerHTML = `${year}년 ${month}월 ${date}일 <span style="font-weight:bold">${day2}</span>`;
-
-/******* 시간 표시하기 *******/
-
-// console.log(today.toTimeString());
 
 const displayTime = document.querySelector("#clock");
 
@@ -55,8 +47,6 @@ let clock = () => {
   hrs = (hrs < 10) ? "0" + hrs : hrs;
   mins = (mins < 10) ? "0" + mins : mins;
   secs = (secs < 10) ? "0" + secs : secs;
-
-  // console.log(`${period} ${hrs} : ${mins} : ${secs}`);
 
   displayTime.innerText = `${period}  ${hrs} : ${mins} : ${secs} `;
 }

@@ -1,8 +1,7 @@
-// 책 목록에 추가
-const title = document.querySelector("#title"); // '제목' 정보
-const author = document.querySelector("#author"); // '저자' 정보
-const save = document.querySelector("#save"); // '저장하기' 버튼
-const bookList = document.querySelector("#bookList"); // 정보가 표시될 영역
+const title = document.querySelector("#title"); 
+const author = document.querySelector("#author"); 
+const save = document.querySelector("#save"); 
+const bookList = document.querySelector("#bookList"); 
 
 save.addEventListener("click", (e) => {
   e.preventDefault();
@@ -17,16 +16,11 @@ save.addEventListener("click", (e) => {
   title.value = "";
   author.value = "";
 
-  // 목록에서 제거하기
-
-  const delButtons = document.querySelectorAll(".delButton"); // '삭제' 버튼 모두 가져오기
+  const delButtons = document.querySelectorAll(".delButton"); 
 
   for (let delButton of delButtons) {
     delButton.addEventListener("click", function () {
       this.parentNode.parentNode.removeChild(this.parentNode);
-      // 아래와 같이 변수를 사용할 수도 있음
-      // let list = this.parentNode;
-      // list.parentNode.removeChild(list);
     });
   }
 });

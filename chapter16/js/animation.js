@@ -1,8 +1,8 @@
 const canvas = document.querySelector("canvas");
 const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth;    // 캔버스 너비
-canvas.height = window.innerHeight;  // 캔버스 높이
+canvas.width = window.innerWidth;  
+canvas.height = window.innerHeight;  
 
 const circle = {
   x: 100,
@@ -25,7 +25,7 @@ function move() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   drawCircle();
 
-  circle.x += circle.dx;   // circle.x = circle.x + circle.dx
+  circle.x += circle.dx; 
   circle.y += circle.dy;
 
   if (circle.x + circle.radius > canvas.width || circle.x - circle.radius < 0) {
